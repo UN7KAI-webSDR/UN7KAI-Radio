@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: UN7KAI-Radio-APK
-          path: app/build/outputs/apk/debug/app-debug.apkname: Build Android APK
+          path: app/build/outputs/apk/debug/app-debug.apk
 
 'on':
   workflow_dispatch:
