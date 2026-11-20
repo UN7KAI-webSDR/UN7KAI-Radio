@@ -69,11 +69,24 @@ public class MainActivity extends Activity {
         bandLabel.setPadding(0, 0, 0, dp(12));
         root.addView(bandLabel);
 
-        addSectionTitle("S-METER");
-        sMeter = text("▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰", 17, true, GREEN);
-        sMeter.setGravity(Gravity.CENTER);
-        sMeter.setPadding(0, dp(4), 0, dp(12));
-        root.addView(sMeter);
+       LinearLayout meterRow = new LinearLayout(this);
+meterRow.setOrientation(LinearLayout.HORIZONTAL);
+meterRow.setGravity(Gravity.CENTER_VERTICAL);
+
+Button serverButton = button("📡\nSDR", 15, PANEL, GREEN);
+meterRow.addView(serverButton,
+        new LinearLayout.LayoutParams(dp(75), dp(65)));
+
+sMeter = text("▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰", 17, true, GREEN);
+sMeter.setGravity(Gravity.CENTER);
+sMeter.setPadding(dp(8), dp(4), 0, dp(12));
+
+meterRow.addView(sMeter,
+        new LinearLayout.LayoutParams(0, -2, 1));
+
+root.addView(meterRow);
+
+serverButton.setOnClickListener(v -> showServerList());
 
         addSectionTitle("ПРИЁМНИК / SDR");
         TextView spectrum = text("Спектр и водопад появятся при подключении\nк SDR-сервису с передачей этих данных.", 13, false, MUTED);
@@ -261,7 +274,19 @@ public class MainActivity extends Activity {
         return new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
+    }private void showServerList() {
+    String[] servers = {
+        "Барнаул — sdr.22dx.ru:8901"
+    };
+
+    new android.app.AlertDialog.Builder(this)
+        .setTitle("ВЫБОР SDR-СЕРВЕРА")
+        .setItems(servers, (dialog, which) -> {
+            status.setText("Выбран сервер: " + servers[which]);
+        })
+        .setNegativeButton("Закрыть", null)
+        .show();
+}
 private void openDirectory() {
     status.setText("UN7KAI Radio — SDR подключение готовится");
 }
