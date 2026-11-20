@@ -95,21 +95,91 @@ serverButton.setOnClickListener(v -> showServerList());
         spectrum.setPadding(dp(10), dp(22), dp(10), dp(22));
         root.addView(spectrum, matchWrap());
 
-        LinearLayout tuneRow = new LinearLayout(this);
-        tuneRow.setGravity(Gravity.CENTER);
-        tuneRow.setPadding(0, dp(18), 0, dp(14));
-        Button down = button("−\nDOWN", 15, PANEL, Color.WHITE);
-        Button up = button("+\nUP", 15, PANEL, Color.WHITE);
+       LinearLayout tuneRow = new LinearLayout(this);
+tuneRow.setGravity(Gravity.CENTER);
+tuneRow.setPadding(0, dp(18), 0, dp(14));
+
 Button knob = button("▲", 32, Color.rgb(37, 40, 44), GREEN);
 
 android.graphics.drawable.GradientDrawable dial =
         new android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
                 new int[]{
-                        Color.rgb(75, 80, 85),
-                        Color.rgb(25, 28, 32),
+                        Color.rgb(90, 95, 100),
+                        Color.rgb(35, 38, 42),
                         Color.rgb(10, 12, 15)
                 });
+
+dial.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+dial.setStroke(dp(4), CYAN);
+knob.setBackground(dial);
+knob.setTextColor(Color.WHITE);
+knob.setRotation(0);
+
+tuneRow.addView(knob,
+        new LinearLayout.LayoutParams(dp(150), dp(150)));
+
+root.addView(tuneRow);
+
+knob.setOnTouchListener(new android.view.View.OnTouchListener() {
+
+    private float lastAngle;
+    private float accumulatedAngle;
+    private float totalMovement;
+
+    @Override
+    public boolean onTouch(android.view.View view,
+                          android.view.MotionEvent event) {
+
+        float x = event.getX() - view.getWidth() / 2f;
+        float y = event.getY() - view.getHeight() / 2f;
+
+        float angle = (float) Math.toDegrees(Math.atan2(y, x));
+
+        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            lastAngle = angle;
+            accumulatedAngle = 0;
+            totalMovement = 0;
+            return true;
+        }
+
+        if (event.getAction() == android.view.MotionEvent.ACTION_MOVE) {
+
+            float delta = angle - lastAngle;
+
+            if (delta > 180) delta -= 360;
+            if (delta < -180) delta += 360;
+
+            lastAngle = angle;
+
+            accumulatedAngle += delta;
+            totalMovement += Math.abs(delta);
+
+            view.setRotation(view.getRotation() + delta);
+
+            int ticks = (int) (accumulatedAngle / 5f);
+
+            if (ticks != 0) {
+                changeFrequency(ticks * step);
+                accumulatedAngle -= ticks * 5f;
+            }
+
+            return true;
+        }
+
+        if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+
+            if (totalMovement < 10) {
+                cycleStep();
+            }
+
+            view.performClick();
+            return true;
+        }
+
+        return true;
+    }
+});
 
 dial.setShape(android.graphics.drawable.GradientDrawable.OVAL);
 dial.setStroke(dp(3), Color.rgb(0, 225, 235));
