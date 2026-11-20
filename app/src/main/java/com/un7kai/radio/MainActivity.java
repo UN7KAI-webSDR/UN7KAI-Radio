@@ -99,16 +99,48 @@ serverButton.setOnClickListener(v -> showServerList());
         tuneRow.setGravity(Gravity.CENTER);
         tuneRow.setPadding(0, dp(18), 0, dp(14));
         Button down = button("−\nDOWN", 15, PANEL, Color.WHITE);
-        Button knob = button("◉\nTUNING", 20, Color.rgb(37, 40, 44), GREEN);
-        Button up = button("+\nUP", 15, PANEL, Color.WHITE);
+Button knob = button("◉", 42, Color.rgb(37, 40, 44), GREEN);
+Button up = button("+\nUP", 15, PANEL, Color.WHITE);
+
+knob.setBackground(panelBackground(
+        Color.rgb(30, 34, 38), 100, GREEN));
         tuneRow.addView(down, new LinearLayout.LayoutParams(0, dp(112), 1));
         tuneRow.addView(knob, new LinearLayout.LayoutParams(0, dp(132), 1.25f));
         tuneRow.addView(up, new LinearLayout.LayoutParams(0, dp(112), 1));
         root.addView(tuneRow);
         down.setOnClickListener(v -> changeFrequency(-step));
         up.setOnClickListener(v -> changeFrequency(step));
-        knob.setOnClickListener(v -> changeFrequency(step));
+        knob.setOnTouchListener(new android.view.View.OnTouchListener() {
+    private float lastAngle = 0;
 
+    @Override
+    public boolean onTouch(android.view.View view,
+                           android.view.MotionEvent event) {
+        float x = event.getX() - view.getWidth() / 2f;
+        float y = event.getY() - view.getHeight() / 2f;
+        float angle = (float) Math.toDegrees(Math.atan2(y, x));
+
+        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            lastAngle = angle;
+            return true;
+        }
+
+        if (event.getAction() == android.view.MotionEvent.ACTION_MOVE) {
+            float delta = angle - lastAngle;
+
+            if (delta > 180) delta -= 360;
+            if (delta < -180) delta += 360;
+
+            if (Math.abs(delta) >= 3) {
+                changeFrequency(delta > 0 ? step : -step);
+                lastAngle = angle;
+            }
+            return true;
+        }
+
+        return event.getAction() == android.view.MotionEvent.ACTION_UP;
+    }
+});
         addSectionTitle("РЕЖИМ РАБОТЫ");
         LinearLayout modes = new LinearLayout(this);
         modes.setOrientation(LinearLayout.HORIZONTAL);
