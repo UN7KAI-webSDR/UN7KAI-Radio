@@ -263,9 +263,8 @@ public class MainActivity extends Activity {
             LinearLayout.LayoutParams.WRAP_CONTENT);
     }
 private void openDirectory() {
-    LinearLayout container = new LinearLayout(this);
-    container.setOrientation(LinearLayout.VERTICAL);
-    container.setBackgroundColor(BG);
+    status.setText("UN7KAI Radio — SDR подключение готовится");
+}
 
     WebView webView = new WebView(this);
     webView.setBackgroundColor(BG);
