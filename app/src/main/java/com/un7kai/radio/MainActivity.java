@@ -115,7 +115,7 @@ dial.setStroke(dp(3), Color.rgb(0, 225, 235));
 knob.setBackground(dial);
 knob.setTextColor(Color.WHITE);
 knob.setRotation(0);
-        Color.rgb(30, 34, 38), 100, GREEN));
+       
         tuneRow.addView(down, new LinearLayout.LayoutParams(0, dp(112), 1));
        tuneRow.addView(knob, new LinearLayout.LayoutParams(dp(132), dp(132)));
         tuneRow.addView(up, new LinearLayout.LayoutParams(0, dp(112), 1));
