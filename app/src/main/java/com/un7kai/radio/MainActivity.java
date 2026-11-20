@@ -266,23 +266,7 @@ private void openDirectory() {
     status.setText("UN7KAI Radio — SDR подключение готовится");
 }
 
-    WebView webView = new WebView(this);
-    webView.setBackgroundColor(BG);
-    webView.getSettings().setJavaScriptEnabled(true);
-    webView.getSettings().setDomStorageEnabled(true);
-    webView.setWebChromeClient(new WebChromeClient());
-
-    webView.loadUrl("http://sdr.22dx.ru:8901");
-
-    container.addView(webView, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.MATCH_PARENT
-    ));
-
-    setContentView(container);
-}
    
-    
 
     private int dp(int value) {
         return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
