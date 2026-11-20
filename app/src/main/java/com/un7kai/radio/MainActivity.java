@@ -99,13 +99,25 @@ serverButton.setOnClickListener(v -> showServerList());
         tuneRow.setGravity(Gravity.CENTER);
         tuneRow.setPadding(0, dp(18), 0, dp(14));
         Button down = button("−\nDOWN", 15, PANEL, Color.WHITE);
-Button knob = button("◉", 42, Color.rgb(37, 40, 44), GREEN);
-Button up = button("+\nUP", 15, PANEL, Color.WHITE);
+Button knob = button("▲", 32, Color.rgb(37, 40, 44), GREEN);
 
-knob.setBackground(panelBackground(
+android.graphics.drawable.GradientDrawable dial =
+        new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                new int[]{
+                        Color.rgb(75, 80, 85),
+                        Color.rgb(25, 28, 32),
+                        Color.rgb(10, 12, 15)
+                });
+
+dial.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+dial.setStroke(dp(3), Color.rgb(0, 225, 235));
+knob.setBackground(dial);
+knob.setTextColor(Color.WHITE);
+knob.setRotation(0);
         Color.rgb(30, 34, 38), 100, GREEN));
         tuneRow.addView(down, new LinearLayout.LayoutParams(0, dp(112), 1));
-        tuneRow.addView(knob, new LinearLayout.LayoutParams(0, dp(132), 1.25f));
+       tuneRow.addView(knob, new LinearLayout.LayoutParams(dp(132), dp(132)));
         tuneRow.addView(up, new LinearLayout.LayoutParams(0, dp(112), 1));
         root.addView(tuneRow);
         down.setOnClickListener(v -> changeFrequency(-step));
