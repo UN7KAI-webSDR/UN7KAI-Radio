@@ -12,6 +12,8 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.webkit.WebView;
+import android.webkit.WebChromeClient;
 
 public class MainActivity extends Activity {
     private final int BG = Color.rgb(5, 7, 9);
@@ -260,17 +262,46 @@ public class MainActivity extends Activity {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT);
     }
+private void openDirectory() {
+    LinearLayout container = new LinearLayout(this);
+    container.setOrientation(LinearLayout.VERTICAL);
+    container.setBackgroundColor(BG);
 
-    private void openDirectory() {
-        String url = "https://www.websdr.org/";
-        if (selectedBand.equals("2 м") || selectedBand.equals("70 см")) {
-            url = "https://www.google.com/search?q=online+VHF+UHF+SDR+receiver+" + Uri.encode(selectedBand);
-        }
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (Exception e) {
-            status.setText("Не удалось открыть браузер. Проверьте интернет.");
-        }
+    WebView webView = new WebView(this);
+    webView.setBackgroundColor(BG);
+    webView.getSettings().setJavaScriptEnabled(true);
+    webView.getSettings().setDomStorageEnabled(true);
+    webView.setWebChromeClient(new WebChromeClient());
+
+    webView.loadUrl("http://sdr.22dx.ru:8901");
+
+    container.addView(webView, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.MATCH_PARENT
+    ));
+
+    setContentView(container);
+}
+   private void openDirectory() {
+    LinearLayout container = new LinearLayout(this);
+    container.setOrientation(LinearLayout.VERTICAL);
+    container.setBackgroundColor(BG);
+
+    WebView webView = new WebView(this);
+    webView.setBackgroundColor(BG);
+    webView.getSettings().setJavaScriptEnabled(true);
+    webView.getSettings().setDomStorageEnabled(true);
+    webView.setWebChromeClient(new WebChromeClient());
+
+    webView.loadUrl("http://sdr.22dx.ru:8901");
+
+    container.addView(webView, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.MATCH_PARENT
+    ));
+
+    setContentView(container);
+}
     }
 
     private int dp(int value) {
