@@ -302,7 +302,7 @@ private void openDirectory() {
 
     setContentView(container);
 }
-    }
+    
 
     private int dp(int value) {
         return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
