@@ -99,6 +99,7 @@ serverButton.setOnClickListener(v -> showServerList());
         tuneRow.setGravity(Gravity.CENTER);
         tuneRow.setPadding(0, dp(18), 0, dp(14));
         Button down = button("−\nDOWN", 15, PANEL, Color.WHITE);
+        Button up = button("+\nUP", 15, PANEL, Color.WHITE);
 Button knob = button("▲", 32, Color.rgb(37, 40, 44), GREEN);
 
 android.graphics.drawable.GradientDrawable dial =
