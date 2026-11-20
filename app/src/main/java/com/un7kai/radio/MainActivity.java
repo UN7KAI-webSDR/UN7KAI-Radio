@@ -282,26 +282,7 @@ private void openDirectory() {
 
     setContentView(container);
 }
-   private void openDirectory() {
-    LinearLayout container = new LinearLayout(this);
-    container.setOrientation(LinearLayout.VERTICAL);
-    container.setBackgroundColor(BG);
-
-    WebView webView = new WebView(this);
-    webView.setBackgroundColor(BG);
-    webView.getSettings().setJavaScriptEnabled(true);
-    webView.getSettings().setDomStorageEnabled(true);
-    webView.setWebChromeClient(new WebChromeClient());
-
-    webView.loadUrl("http://sdr.22dx.ru:8901");
-
-    container.addView(webView, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.MATCH_PARENT
-    ));
-
-    setContentView(container);
-}
+   
     
 
     private int dp(int value) {
