@@ -43,6 +43,7 @@ public class MainActivity extends Activity {
     private OkHttpClient kiwiClient;
 private WebSocket kiwiSocket;
 private boolean kiwiConnected = false;
+    private String selectedServerUrl = "";
     private TextView frequency;
     private TextView bandLabel;
     private TextView status;
