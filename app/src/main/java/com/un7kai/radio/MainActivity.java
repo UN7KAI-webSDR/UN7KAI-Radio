@@ -221,7 +221,7 @@ private boolean kiwiConnected = false;
         sqlButton.setOnClickListener(v ->
             showMessage("Настройка SQL"));
 
-        Button serverButton = button("SDR БАРНАУЛ");
+        Button serverButton = button("SDR СЕРВЕРА");
         right.addView(serverButton, buttonParams());
         serverButton.setOnClickListener(v -> showServerList());
 
