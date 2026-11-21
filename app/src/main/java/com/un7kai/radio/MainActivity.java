@@ -59,6 +59,7 @@ private boolean kiwiConnected = false;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        kiwiClient = new OkHttpClient.Builder().build();
 
         setRequestedOrientation(
             ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
@@ -417,7 +418,7 @@ private boolean kiwiConnected = false;
         "SDR: " + selected.optString("name", "KiwiSDR")
     );
 
-    showMessage("Выбран сервер:\n" + serverUrl);
+    showMessage("Выбран сервер:\n" + selectedServerUrl);
 })
                     .setNegativeButton("Закрыть", null)
                     .show();
