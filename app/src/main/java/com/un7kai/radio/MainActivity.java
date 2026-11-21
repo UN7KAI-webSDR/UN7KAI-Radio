@@ -374,10 +374,11 @@ private void openDirectory() {
     private int dp(int value) {
         return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
     }
- private class DialView extends android.view.View {
+private class DialView extends android.view.View {
 
     private android.graphics.Paint paint =
-            new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+            new android.graphics.Paint(
+                    android.graphics.Paint.ANTI_ALIAS_FLAG);
 
     public DialView(android.content.Context context) {
         super(context);
@@ -397,5 +398,89 @@ private void openDirectory() {
         paint.setColor(Color.BLACK);
         paint.setShadowLayer(dp(8), dp(3), dp(5), Color.BLACK);
         canvas.drawCircle(cx, cy, r, paint);
-        paint.clearShad…   
+        paint.clearShadowLayer();
+
+        // Металлический внешний ободок
+        paint.setShader(new android.graphics.RadialGradient(
+                cx, cy, r,
+                new int[]{
+                        Color.rgb(130, 133, 138),
+                        Color.rgb(55, 58, 63),
+                        Color.rgb(15, 17, 20)
+                },
+                null,
+                android.graphics.Shader.TileMode.CLAMP));
+
+        canvas.drawCircle(cx, cy, r, paint);
+        paint.setShader(null);
+
+        // Насечки
+        paint.setColor(Color.rgb(180, 183, 188));
+        paint.setStrokeWidth(dp(2));
+
+        for (int i = 0; i < 72; i++) {
+            double a = Math.PI * 2 * i / 72;
+
+            float x1 = cx + (float)Math.cos(a) * (r - dp(4));
+            float y1 = cy + (float)Math.sin(a) * (r - dp(4));
+
+            float x2 = cx + (float)Math.cos(a) * (r - dp(12));
+            float y2 = cy + (float)Math.sin(a) * (r - dp(12));
+
+            canvas.drawLine(x1, y1, x2, y2, paint);
+        }
+
+        // Внутреннее металлическое кольцо
+        paint.setStyle(android.graphics.Paint.Style.STROKE);
+        paint.setStrokeWidth(dp(6));
+        paint.setColor(Color.rgb(175, 178, 182));
+        canvas.drawCircle(cx, cy, r - dp(15), paint);
+
+        paint.setStrokeWidth(dp(3));
+        paint.setColor(Color.rgb(35, 38, 42));
+        canvas.drawCircle(cx, cy, r - dp(23), paint);
+
+        paint.setStyle(android.graphics.Paint.Style.FILL);
+
+        // Чёрная поверхность
+        paint.setShader(new android.graphics.RadialGradient(
+                cx - r * 0.2f,
+                cy - r * 0.2f,
+                r,
+                new int[]{
+                        Color.rgb(85, 88, 92),
+                        Color.rgb(40, 42, 45),
+                        Color.rgb(8, 9, 11)
+                },
+                null,
+                android.graphics.Shader.TileMode.CLAMP));
+
+        canvas.drawCircle(cx, cy, r - dp(26), paint);
+        paint.setShader(null);
+
+        // Центральное кольцо
+        paint.setColor(Color.rgb(75, 78, 82));
+        canvas.drawCircle(cx, cy, r * 0.39f, paint);
+
+        paint.setColor(Color.rgb(18, 20, 23));
+        canvas.drawCircle(cx, cy, r * 0.34f, paint);
+
+        // Центральная вставка
+        paint.setShader(new android.graphics.RadialGradient(
+                cx, cy, r * 0.28f,
+                new int[]{
+                        Color.rgb(95, 98, 102),
+                        Color.rgb(35, 37, 40),
+                        Color.rgb(8, 9, 11)
+                },
+                null,
+                android.graphics.Shader.TileMode.CLAMP));
+
+        canvas.drawCircle(cx, cy, r * 0.27f, paint);
+        paint.setShader(null);
+
+        paint.setColor(Color.rgb(12, 14, 16));
+        canvas.drawCircle(cx, cy, r * 0.15f, paint);
+    }
+}
 }
