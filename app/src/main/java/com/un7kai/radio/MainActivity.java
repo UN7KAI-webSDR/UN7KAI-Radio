@@ -408,18 +408,16 @@ private boolean kiwiConnected = false;
                     .setTitle("KIWISDR — " + allowed.size() +
                               " разрешённых серверов")
                     .setItems(names, (dialog, which) -> {
-                        JSONObject selected = allowed.get(which);
+    JSONObject selected = allowed.get(which);
 
-                        status.setText(
-                            "Выбран: " +
-                            selected.optString("name", "KiwiSDR")
-                        );
+    String serverUrl = selected.optString("url", "");
 
-                        showMessage(
-                            "Сервер выбран. Следующий этап — " +
-                            "подключение звука и управления частотой."
-                        );
-                    })
+    status.setText(
+        "SDR: " + selected.optString("name", "KiwiSDR")
+    );
+
+    showMessage("Выбран сервер:\n" + serverUrl);
+})
                     .setNegativeButton("Закрыть", null)
                     .show();
             });
