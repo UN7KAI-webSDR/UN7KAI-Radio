@@ -1,5 +1,7 @@
 package com.un7kai.radio;
-
+import android.webkit.WebView;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.pm.ActivityInfo;
@@ -26,6 +28,7 @@ public class MainActivity extends Activity {
     private final int MUTED = Color.rgb(145, 151, 158);
 
     private LinearLayout root;
+    private WebView sdrWebView;
     private TextView frequency;
     private TextView bandLabel;
     private TextView status;
@@ -317,11 +320,39 @@ public class MainActivity extends Activity {
             .setItems(new String[]{
                 "Барнаул — sdr.22dx.ru:8901"
             }, (dialog, which) ->
-                status.setText("SDR Барнаул"))
+    openSdrTest())
             .setNegativeButton("Закрыть", null)
             .show();
     }
+private void openSdrTest() {
 
+    if (sdrWebView == null) {
+        sdrWebView = new WebView(this);
+
+        WebSettings settings =
+            sdrWebView.getSettings();
+
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+
+        sdrWebView.setWebChromeClient(
+            new WebChromeClient()
+        );
+
+        root.addView(sdrWebView,
+            new LinearLayout.LayoutParams(
+                dp(1), dp(1)
+            )
+        );
+    }
+
+    sdrWebView.loadUrl(
+        "http://sdr.22dx.ru:8901/"
+    );
+
+    status.setText("ЗАГРУЗКА SDR БАРНАУЛ");
+}
     private class DialView extends View {
         private final Paint paint = new Paint(
             Paint.ANTI_ALIAS_FLAG);
