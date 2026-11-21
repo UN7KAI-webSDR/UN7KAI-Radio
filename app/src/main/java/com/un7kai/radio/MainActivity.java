@@ -18,6 +18,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class MainActivity extends Activity {
 
@@ -315,13 +321,54 @@ public class MainActivity extends Activity {
     }
 
     private void showServerList() {
-    new android.app.AlertDialog.Builder(this)
-        .setTitle("SDR SERVER")
-        .setItems(new String[]{
-            "Барнаул — sdr.22dx.ru:8901"
-        }, (dialog, which) -> openSdrTest())
-        .setNegativeButton("Закрыть", null)
-        .show();
+
+    new Thread(() -> {
+        StringBuilder result = new StringBuilder();
+        HttpURLConnection connection = null;
+
+        try {
+            URL url = new URL(
+                "https://cdn.aethersdr.com/kiwi.json"
+            );
+
+            connection = (HttpURLConnection)
+                url.openConnection();
+
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(15000);
+
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(
+                    connection.getInputStream()
+                )
+            );
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.append(line);
+                if (result.length() > 2500) break;
+            }
+
+            reader.close();
+
+        } catch (Exception e) {
+            result.append("Ошибка: ").append(e.getMessage());
+
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+
+        runOnUiThread(() ->
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("KIWISDR — ДАННЫЕ КАТАЛОГА")
+                .setMessage(result.toString())
+                .setPositiveButton("Закрыть", null)
+                .show()
+        );
+
+    }).start();
 }
 
 private void openSdrTest() {
