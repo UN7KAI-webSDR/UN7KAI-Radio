@@ -342,10 +342,10 @@ private void openSdrTest() {
         );
 
         root.addView(sdrWebView,
-            new LinearLayout.LayoutParams(
-                dp(320), dp(220)
-            )
-        );
+    new LinearLayout.LayoutParams(
+        -1, -1
+    )
+);
     }
 
     sdrWebView.loadUrl(
