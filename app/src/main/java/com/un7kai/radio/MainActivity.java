@@ -1,4 +1,9 @@
 package com.un7kai.radio;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okhttp3.Response;
 import android.webkit.WebView;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -35,6 +40,9 @@ public class MainActivity extends Activity {
 
     private LinearLayout root;
     private WebView sdrWebView;
+    private OkHttpClient kiwiClient;
+private WebSocket kiwiSocket;
+private boolean kiwiConnected = false;
     private TextView frequency;
     private TextView bandLabel;
     private TextView status;
