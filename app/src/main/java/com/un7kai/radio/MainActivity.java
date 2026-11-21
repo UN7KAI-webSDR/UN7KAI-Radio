@@ -323,7 +323,6 @@ public class MainActivity extends Activity {
     private void showServerList() {
 
     new Thread(() -> {
-        StringBuilder result = new StringBuilder();
         HttpURLConnection connection = null;
 
         try {
@@ -334,8 +333,8 @@ public class MainActivity extends Activity {
             connection = (HttpURLConnection)
                 url.openConnection();
 
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(15000);
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(20000);
 
             BufferedReader reader = new BufferedReader(
                 new InputStreamReader(
@@ -343,30 +342,90 @@ public class MainActivity extends Activity {
                 )
             );
 
+            StringBuilder json = new StringBuilder();
             String line;
+
             while ((line = reader.readLine()) != null) {
-                result.append(line);
-                if (result.length() > 2500) break;
+                json.append(line);
             }
 
             reader.close();
 
+            JSONObject data =
+                new JSONObject(json.toString());
+
+            if (data.optInt("schema", -1) != 1) {
+                throw new Exception("Неизвестная версия каталога");
+            }
+
+            JSONArray all = data.getJSONArray("receivers");
+            java.util.ArrayList<JSONObject> allowed =
+                new java.util.ArrayList<>();
+
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject s = all.getJSONObject(i);
+
+                if (!s.has("ext_api") ||
+                    s.optInt("ext_api", 0) <= 0 ||
+                    s.optBoolean("offline", true) ||
+                    s.optBoolean("flagged", true) ||
+                    s.optString("url", "").isEmpty()) {
+                    continue;
+                }
+
+                allowed.add(s);
+            }
+
+            runOnUiThread(() -> {
+                if (allowed.isEmpty()) {
+                    showMessage("Разрешённых серверов пока нет");
+                    return;
+                }
+
+                String[] names = new String[allowed.size()];
+
+                for (int i = 0; i < allowed.size(); i++) {
+                    JSONObject s = allowed.get(i);
+
+                    names[i] =
+                        s.optString("name", "KiwiSDR") +
+                        "\n" +
+                        s.optString("loc", "Место не указано") +
+                        " | Пользователи: " +
+                        s.optInt("users", 0) + "/" +
+                        s.optInt("users_max", 0);
+                }
+
+                new android.app.AlertDialog.Builder(this)
+                    .setTitle("KIWISDR — " + allowed.size() +
+                              " разрешённых серверов")
+                    .setItems(names, (dialog, which) -> {
+                        JSONObject selected = allowed.get(which);
+
+                        status.setText(
+                            "Выбран: " +
+                            selected.optString("name", "KiwiSDR")
+                        );
+
+                        showMessage(
+                            "Сервер выбран. Следующий этап — " +
+                            "подключение звука и управления частотой."
+                        );
+                    })
+                    .setNegativeButton("Закрыть", null)
+                    .show();
+            });
+
         } catch (Exception e) {
-            result.append("Ошибка: ").append(e.getMessage());
+            runOnUiThread(() ->
+                showMessage("Ошибка каталога: " + e.getMessage())
+            );
 
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
         }
-
-        runOnUiThread(() ->
-            new android.app.AlertDialog.Builder(this)
-                .setTitle("KIWISDR — ДАННЫЕ КАТАЛОГА")
-                .setMessage(result.toString())
-                .setPositiveButton("Закрыть", null)
-                .show()
-        );
 
     }).start();
 }
