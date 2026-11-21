@@ -2,20 +2,23 @@ package com.un7kai.radio;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.Paint;
+import android.graphics.Canvas;
+import android.graphics.RadialGradient;
+import android.graphics.Shader;
 import android.graphics.drawable.GradientDrawable;
-import android.content.Intent;
-import android.net.Uri;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
-import android.webkit.WebView;
-import android.webkit.WebChromeClient;
 
 public class MainActivity extends Activity {
+
     private final int BG = Color.rgb(5, 7, 9);
     private final int PANEL = Color.rgb(25, 29, 33);
     private final int GREEN = Color.rgb(0, 245, 55);
@@ -28,241 +31,240 @@ public class MainActivity extends Activity {
     private TextView status;
     private TextView modeLabel;
     private TextView stepLabel;
-    private TextView sMeter;
+
     private String selectedBand = "40 м";
     private String selectedMode = "LSB";
+
     private int step = 100;
     private long frequencyHz = 7129100L;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setRequestedOrientation(
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        );
+
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
+        // Основная горизонтальная компоновка
         root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(12), dp(10), dp(12), dp(16));
+        root.setOrientation(LinearLayout.HORIZONTAL);
+        root.setPadding(dp(8), dp(6), dp(8), dp(6));
         root.setBackgroundColor(BG);
-        scroll.addView(root);
+       // ЛЕВАЯ ПАНЕЛЬ
+        LinearLayout left = new LinearLayout(this);
+        left.setOrientation(LinearLayout.VERTICAL);
+        left.setGravity(Gravity.CENTER);
+        root.addView(left, new LinearLayout.LayoutParams(
+            0, -1, 1.2f));
 
-        LinearLayout header = new LinearLayout(this);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        TextView brand = text("UN7KAI", 18, true, Color.rgb(245, 225, 60));
-        TextView remote = text("  RADIO  •  WEB SDR", 12, true, CYAN);
-        header.addView(brand, new LinearLayout.LayoutParams(0, -2, 1));
-        header.addView(remote);
-        root.addView(header);
+        TextView brand = text("UN7KAI", 23, true,
+            Color.rgb(245, 225, 60));
+        left.addView(brand);
+        left.addView(text("SDR RADIO", 13, true, CYAN));
 
-        frequency = text("7.129.100", 48, true, GREEN);
-        frequency.setGravity(Gravity.CENTER);
-        frequency.setPadding(0, dp(14), 0, dp(2));
-        frequency.setSingleLine(true);
-        frequency.setTextScaleX(0.94f);
-        root.addView(frequency);
+        addTitle(left, "РЕЖИМ");
 
-        bandLabel = text("40 METERS     •     LSB", 14, true, CYAN);
-        bandLabel.setGravity(Gravity.CENTER);
-        bandLabel.setPadding(0, 0, 0, dp(12));
-        root.addView(bandLabel);
+        String[] modes = {"LSB", "USB", "CW", "AM", "FM"};
 
-       LinearLayout meterRow = new LinearLayout(this);
-meterRow.setOrientation(LinearLayout.HORIZONTAL);
-meterRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout modeRow = new LinearLayout(this);
+        modeRow.setOrientation(LinearLayout.HORIZONTAL);
+        left.addView(modeRow);
 
-Button serverButton = button("📡\nSDR", 15, PANEL, GREEN);
-meterRow.addView(serverButton,
-        new LinearLayout.LayoutParams(dp(75), dp(65)));
-
-sMeter = text("▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰", 17, true, GREEN);
-sMeter.setGravity(Gravity.CENTER);
-sMeter.setPadding(dp(8), dp(4), 0, dp(12));
-
-meterRow.addView(sMeter,
-        new LinearLayout.LayoutParams(0, -2, 1));
-
-root.addView(meterRow);
-
-serverButton.setOnClickListener(v -> showServerList());
-
-        addSectionTitle("ПРИЁМНИК / SDR");
-        TextView spectrum = text("Спектр и водопад появятся при подключении\nк SDR-сервису с передачей этих данных.", 13, false, MUTED);
-        spectrum.setGravity(Gravity.CENTER);
-        spectrum.setBackground(panelBackground(Color.rgb(13, 21, 25), 10, Color.rgb(45, 65, 68)));
-        spectrum.setPadding(dp(10), dp(22), dp(10), dp(22));
-        root.addView(spectrum, matchWrap());
-
-       LinearLayout tuneRow = new LinearLayout(this);
-tuneRow.setGravity(Gravity.CENTER);
-tuneRow.setPadding(0, dp(18), 0, dp(14));
-
-DialView knob = new DialView(this);
-
-LinearLayout.LayoutParams knobParams =
-        new LinearLayout.LayoutParams(dp(150), dp(150));
-
-knobParams.setMargins(dp(8), 0, dp(8), 0);
-
-tuneRow.addView(knob, knobParams);
-
-
-root.addView(tuneRow);
-
-knob.setOnTouchListener(new android.view.View.OnTouchListener() {
-
-    private float lastAngle;
-    private float accumulatedAngle;
-    private float totalMovement;
-
-    @Override
-    public boolean onTouch(android.view.View view,
-                          android.view.MotionEvent event) {
-
-        float x = event.getX() - view.getWidth() / 2f;
-        float y = event.getY() - view.getHeight() / 2f;
-
-        float angle = (float) Math.toDegrees(Math.atan2(y, x));
-
-        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-            lastAngle = angle;
-            accumulatedAngle = 0;
-            totalMovement = 0;
-            return true;
-        }
-
-        if (event.getAction() == android.view.MotionEvent.ACTION_MOVE) {
-
-            float delta = angle - lastAngle;
-
-            if (delta > 180) delta -= 360;
-            if (delta < -180) delta += 360;
-
-            lastAngle = angle;
-
-            accumulatedAngle += delta;
-            totalMovement += Math.abs(delta);
-
-            view.setRotation(view.getRotation() + delta);
-
-            int ticks = (int) (accumulatedAngle / 5f);
-
-            if (ticks != 0) {
-                changeFrequency(ticks * step);
-                accumulatedAngle -= ticks * 5f;
-            }
-
-            return true;
-        }
-
-        if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-
-            if (totalMovement < 10) {
-                cycleStep();
-            }
-
-            view.performClick();
-            return true;
-        }
-
-        return true;
-    }
-});
-        addSectionTitle("РЕЖИМ РАБОТЫ");
-        LinearLayout modes = new LinearLayout(this);
-        modes.setOrientation(LinearLayout.HORIZONTAL);
-        String[] modeNames = {"LSB", "USB", "CW", "AM", "FM"};
-        for (String m : modeNames) {
-            Button b = smallButton(m);
-            modes.addView(b, new LinearLayout.LayoutParams(0, dp(46), 1));
+        for (String m : modes) {
+            Button b = button(m);
+            modeRow.addView(b,
+                new LinearLayout.LayoutParams(0, dp(42), 1));
             b.setOnClickListener(v -> {
                 selectedMode = m;
-                updateLabels();
+                modeLabel.setText("Режим: " + m);
+                bandLabel.setText(selectedBand + " • " + m);
             });
         }
-        root.addView(modes);
-        modeLabel = text("Режим: LSB", 13, true, GREEN);
-        modeLabel.setPadding(0, dp(6), 0, dp(4));
-        root.addView(modeLabel);
 
-        addSectionTitle("РАДИОЛЮБИТЕЛЬСКИЕ ДИАПАЗОНЫ");
-        String[][] bands = {
-            {"160 м", "1.8 MHz"}, {"80 м", "3.5 MHz"}, {"40 м", "7 MHz"},
-            {"20 м", "14 MHz"}, {"15 м", "21 MHz"}, {"10 м", "28 MHz"},
-            {"2 м", "144 MHz"}, {"70 см", "430 MHz"}
+        addTitle(left, "ДИАПАЗОНЫ");
+
+        String[] bands = {
+            "160 м", "80 м", "40 м", "20 м",
+            "15 м", "10 м", "2 м", "70 см"
         };
-        LinearLayout bandGrid = new LinearLayout(this);
-        bandGrid.setOrientation(LinearLayout.VERTICAL);
-        for (int i = 0; i < bands.length; i += 2) {
+
+        for (int i = 0; i < bands.length; i += 4) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
-            for (int j = i; j < Math.min(i + 2, bands.length); j++) {
-                final String band = bands[j][0];
-                Button b = smallButton(bands[j][0] + "\n" + bands[j][1]);
-                row.addView(b, new LinearLayout.LayoutParams(0, dp(58), 1));
+            left.addView(row);
+
+            for (int j = i; j < i + 4; j++) {
+                final String band = bands[j];
+                Button b = button(band);
+                row.addView(b,
+                    new LinearLayout.LayoutParams(0, dp(42), 1));
                 b.setOnClickListener(v -> selectBand(band));
             }
-            bandGrid.addView(row);
         }
-        root.addView(bandGrid);
+    // ЦЕНТРАЛЬНАЯ ПАНЕЛЬ
+        LinearLayout center = new LinearLayout(this);
+        center.setOrientation(LinearLayout.VERTICAL);
+        center.setGravity(Gravity.CENTER);
+        root.addView(center,
+            new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.MATCH_PARENT, 2.5f));
 
-        addSectionTitle("НАСТРОЙКИ");
-        LinearLayout controls = new LinearLayout(this);
-        controls.setOrientation(LinearLayout.HORIZONTAL);
-        Button stepButton = smallButton("STEP\n100 Hz");
-        Button bwButton = smallButton("BW\nФИЛЬТР");
-        Button sqlButton = smallButton("SQL\nШУМОПОДАВЛЕНИЕ");
-        controls.addView(stepButton, new LinearLayout.LayoutParams(0, dp(58), 1));
-        controls.addView(bwButton, new LinearLayout.LayoutParams(0, dp(58), 1));
-        controls.addView(sqlButton, new LinearLayout.LayoutParams(0, dp(58), 1));
-        root.addView(controls);
-        stepLabel = text("Шаг настройки: 100 Hz", 13, false, MUTED);
-        stepLabel.setPadding(0, dp(6), 0, dp(2));
-        root.addView(stepLabel);
+        frequency = text("7.129.100", 34, true, GREEN);
+        frequency.setGravity(Gravity.CENTER);
+        center.addView(frequency);
+
+        bandLabel = text("40 м • LSB", 14, true, CYAN);
+        center.addView(bandLabel);
+
+        TextView spectrum = text(
+            "〰  SPECTRUM / WATERFALL  〰",
+            15, true, GREEN);
+        spectrum.setGravity(Gravity.CENTER);
+        spectrum.setBackground(panelBackground(
+            Color.rgb(10, 22, 25), 8, CYAN));
+        LinearLayout.LayoutParams sp =
+            new LinearLayout.LayoutParams(
+                -1, 0, 1);
+        sp.setMargins(dp(4), dp(8), dp(4), dp(8));
+        center.addView(spectrum, sp);
+
+        DialView knob = new DialView(this);
+        center.addView(knob,
+            new LinearLayout.LayoutParams(dp(145), dp(145)));
+
+        stepLabel = text("STEP: 100 Hz", 13, true, CYAN);
+        center.addView(stepLabel);
+
+        modeLabel = text("Режим: LSB", 12, true, GREEN);
+        center.addView(modeLabel);
+       knob.setOnTouchListener(new View.OnTouchListener() {
+            float lastAngle;
+            float accumulated;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent e) {
+                float x = e.getX() - v.getWidth() / 2f;
+                float y = e.getY() - v.getHeight() / 2f;
+                float angle = (float) Math.toDegrees(
+                    Math.atan2(y, x));
+
+                if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                    lastAngle = angle;
+                    accumulated = 0;
+                    return true;
+                }
+
+                if (e.getAction() == MotionEvent.ACTION_MOVE) {
+                    float delta = angle - lastAngle;
+
+                    if (delta > 180) delta -= 360;
+                    if (delta < -180) delta += 360;
+
+                    lastAngle = angle;
+                    accumulated += delta;
+
+                    v.setRotation(v.getRotation() + delta);
+
+                    int ticks = (int)(accumulated / 5f);
+
+                    if (ticks != 0) {
+                        changeFrequency((long) ticks * step);
+                        accumulated -= ticks * 5f;
+                    }
+                    return true;
+                }
+                return true;
+            }
+        }); 
+        // ПРАВАЯ ПАНЕЛЬ
+        LinearLayout right = new LinearLayout(this);
+        right.setOrientation(LinearLayout.VERTICAL);
+        right.setGravity(Gravity.CENTER);
+        root.addView(right,
+            new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.MATCH_PARENT, 1.1f));
+
+        addTitle(right, "НАСТРОЙКИ");
+
+        Button stepButton = button("STEP");
+        right.addView(stepButton, buttonParams());
         stepButton.setOnClickListener(v -> cycleStep());
-        bwButton.setOnClickListener(v -> showMessage("Полоса пропускания настраивается на стороне SDR-сервиса."));
-        sqlButton.setOnClickListener(v -> showMessage("SQL доступен, если его поддерживает выбранный SDR-сервис."));
 
-        Button open = button("НАЙТИ ИНТЕРНЕТ-SDR ПРИЁМНИКИ", 15, Color.rgb(20, 105, 40), Color.WHITE);
-        LinearLayout.LayoutParams openParams = matchWrap();
-        openParams.topMargin = dp(14);
-        root.addView(open, openParams);
-        open.setOnClickListener(v -> openDirectory());
+        Button bwButton = button("BW FILTER");
+        right.addView(bwButton, buttonParams());
+        bwButton.setOnClickListener(v ->
+            showMessage("Настройка BW"));
 
-        status = text("Выбран диапазон: " + selectedBand, 13, true, CYAN);
-        status.setGravity(Gravity.CENTER);
-        status.setPadding(0, dp(12), 0, dp(4));
-        root.addView(status);
+        Button sqlButton = button("SQL");
+        right.addView(sqlButton, buttonParams());
+        sqlButton.setOnClickListener(v ->
+            showMessage("Настройка SQL"));
 
-        TextView note = text("Телефон принимает сигнал через удалённые интернет-SDR.\nS-метр, спектр, водопад и точная настройка зависят от возможностей выбранного сервиса.", 12, false, MUTED);
-        note.setGravity(Gravity.CENTER);
-        note.setPadding(dp(8), dp(10), dp(8), dp(4));
-        root.addView(note);
+        Button serverButton = button("SDR БАРНАУЛ");
+        right.addView(serverButton, buttonParams());
+        serverButton.setOnClickListener(v -> showServerList());
 
-        setContentView(scroll);
+        Button mapButton = button("MAP");
+        right.addView(mapButton, buttonParams());
+        mapButton.setOnClickListener(v ->
+            showMessage("Карта SDR"));
+
+        status = text("UN7KAI READY", 12, true, GREEN);
+        right.addView(status);
+
+        // ЗАВЕРШЕНИЕ КОМПОНОВКИ
+        setContentView(root);
+    }
+    private void addTitle(LinearLayout layout, String title) {
+        TextView t = text(title, 12, true, CYAN);
+        t.setGravity(Gravity.CENTER);
+        layout.addView(t);
     }
 
-    private void addSectionTitle(String label) {
-        TextView t = text(label, 12, true, CYAN);
-        t.setPadding(dp(2), dp(13), 0, dp(6));
-        root.addView(t);
+    private Button button(String label) {
+        Button b = new Button(this);
+        b.setText(label);
+        b.setTextSize(11);
+        b.setTextColor(GREEN);
+        b.setAllCaps(false);
+        b.setPadding(2, 0, 2, 0);
+        b.setBackground(panelBackground(PANEL, 9, CYAN));
+        return b;
     }
 
-    private void selectBand(String band) {
-        selectedBand = band;
-        if (band.equals("160 м")) frequencyHz = 1900000;
-        else if (band.equals("80 м")) frequencyHz = 3700000;
-        else if (band.equals("40 м")) frequencyHz = 7129100;
-        else if (band.equals("20 м")) frequencyHz = 14150000;
-        else if (band.equals("15 м")) frequencyHz = 21200000;
-        else if (band.equals("10 м")) frequencyHz = 28400000;
-        else if (band.equals("2 м")) frequencyHz = 145500000;
-        else if (band.equals("70 см")) frequencyHz = 433500000;
-        updateFrequency();
-        updateLabels();
-        status.setText("Выбран диапазон: " + selectedBand);
+    private LinearLayout.LayoutParams buttonParams() {
+        LinearLayout.LayoutParams p =
+            new LinearLayout.LayoutParams(-1, dp(42));
+        p.setMargins(dp(2), dp(2), dp(2), dp(2));
+        return p;
+    }
+
+    private TextView text(String value, int size,
+                          boolean bold, int color) {
+        TextView t = new TextView(this);
+        t.setText(value);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        return t;
+    }
+
+    private GradientDrawable panelBackground(
+            int color, int radius, int stroke) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(color);
+        d.setCornerRadius(dp(radius));
+        d.setStroke(dp(1), stroke);
+        return d;
+    }
+
+    private int dp(int value) {
+        return (int)(value *
+            getResources().getDisplayMetrics().density + 0.5f);
     }
 
     private void changeFrequency(long delta) {
@@ -271,20 +273,35 @@ knob.setOnTouchListener(new android.view.View.OnTouchListener() {
     }
 
     private void updateFrequency() {
-        String raw = String.format(java.util.Locale.US, "%,d", frequencyHz).replace(',', '.');
+        String raw = String.format(
+            java.util.Locale.US, "%,d", frequencyHz)
+            .replace(',', '.');
         frequency.setText(raw);
     }
 
-    private void updateLabels() {
-        bandLabel.setText(selectedBand.toUpperCase() + "     •     " + selectedMode);
-        modeLabel.setText("Режим: " + selectedMode);
+    private void selectBand(String band) {
+        selectedBand = band;
+
+        if (band.equals("160 м")) frequencyHz = 1900000;
+        else if (band.equals("80 м")) frequencyHz = 3700000;
+        else if (band.equals("40 м")) frequencyHz = 7129100;
+        else if (band.equals("20 м")) frequencyHz = 14150000;
+        else if (band.equals("15 м")) frequencyHz = 21200000;
+        else if (band.equals("10 м")) frequencyHz = 28400000;
+        else if (band.equals("2 м")) frequencyHz = 145500000;
+        else if (band.equals("70 см")) frequencyHz = 433500000;
+
+        updateFrequency();
+        bandLabel.setText(selectedBand + " • " + selectedMode);
+        status.setText("UN7KAI • " + selectedBand);
     }
 
     private void cycleStep() {
         if (step == 100) step = 500;
         else if (step == 500) step = 1000;
         else step = 100;
-        stepLabel.setText("Шаг настройки: " + step + " Hz");
+
+        stepLabel.setText("STEP: " + step + " Hz");
     }
 
     private void showMessage(String message) {
@@ -294,176 +311,85 @@ knob.setOnTouchListener(new android.view.View.OnTouchListener() {
             .show();
     }
 
-    private Button button(String label, int size, int background, int foreground) {
-        Button b = new Button(this);
-        b.setText(label);
-        b.setTextSize(size);
-        b.setAllCaps(false);
-        b.setTextColor(foreground);
-        b.setGravity(Gravity.CENTER);
-        b.setBackground(panelBackground(background, 14, Color.rgb(75, 80, 85)));
-        b.setPadding(dp(4), dp(4), dp(4), dp(4));
-        return b;
+    private void showServerList() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("SDR SERVER")
+            .setItems(new String[]{
+                "Барнаул — sdr.22dx.ru:8901"
+            }, (dialog, which) ->
+                status.setText("SDR Барнаул"))
+            .setNegativeButton("Закрыть", null)
+            .show();
     }
 
-    private Button smallButton(String label) {
-        Button b = button(label, 13, PANEL, GREEN);
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(48), 1);
-        p.setMargins(dp(2), dp(2), dp(2), dp(2));
-        b.setLayoutParams(p);
-        return b;
-    }
+    private class DialView extends View {
+        private final Paint paint = new Paint(
+            Paint.ANTI_ALIAS_FLAG);
 
-    private TextView text(String value, int size, boolean bold, int color) {
-        TextView t = new TextView(this);
-        t.setText(value);
-        t.setTextSize(size);
-        t.setTextColor(color);
-        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        return t;
-    }
-
-    private GradientDrawable panelBackground(int color, int radius, int stroke) {
-        GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
-        d.setCornerRadius(dp(radius));
-        d.setStroke(dp(1), stroke);
-        return d;
-    }
-
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT);
-    }private void showServerList() {
-    String[] servers = {
-        "Барнаул — sdr.22dx.ru:8901"
-    };
-
-    new android.app.AlertDialog.Builder(this)
-        .setTitle("ВЫБОР SDR-СЕРВЕРА")
-        .setItems(servers, (dialog, which) -> {
-            status.setText("Выбран сервер: " + servers[which]);
-        })
-        .setNegativeButton("Закрыть", null)
-        .show();
-}
-private void openDirectory() {
-    status.setText("UN7KAI Radio — SDR подключение готовится");
-}
-
-   
-
-    private int dp(int value) {
-        return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
-    }
-private class DialView extends android.view.View {
-
-    private android.graphics.Paint paint =
-            new android.graphics.Paint(
-                    android.graphics.Paint.ANTI_ALIAS_FLAG);
-
-    public DialView(android.content.Context context) {
-        super(context);
-        setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null);
-    }
-
-    @Override
-    protected void onDraw(android.graphics.Canvas canvas) {
-        super.onDraw(canvas);
-
-        float cx = getWidth() / 2f;
-        float cy = getHeight() / 2f;
-        float r = Math.min(cx, cy) * 0.96f;
-
-        // Тень
-        paint.setShader(null);
-        paint.setColor(Color.BLACK);
-        paint.setShadowLayer(dp(8), dp(3), dp(5), Color.BLACK);
-        canvas.drawCircle(cx, cy, r, paint);
-        paint.clearShadowLayer();
-
-        // Металлический внешний ободок
-        paint.setShader(new android.graphics.RadialGradient(
-                cx, cy, r,
-                new int[]{
-                        Color.rgb(130, 133, 138),
-                        Color.rgb(55, 58, 63),
-                        Color.rgb(15, 17, 20)
-                },
-                null,
-                android.graphics.Shader.TileMode.CLAMP));
-
-        canvas.drawCircle(cx, cy, r, paint);
-        paint.setShader(null);
-
-        // Насечки
-        paint.setColor(Color.rgb(180, 183, 188));
-        paint.setStrokeWidth(dp(2));
-
-        for (int i = 0; i < 72; i++) {
-            double a = Math.PI * 2 * i / 72;
-
-            float x1 = cx + (float)Math.cos(a) * (r - dp(4));
-            float y1 = cy + (float)Math.sin(a) * (r - dp(4));
-
-            float x2 = cx + (float)Math.cos(a) * (r - dp(12));
-            float y2 = cy + (float)Math.sin(a) * (r - dp(12));
-
-            canvas.drawLine(x1, y1, x2, y2, paint);
+        DialView(android.content.Context context) {
+            super(context);
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
 
-        // Внутреннее металлическое кольцо
-        paint.setStyle(android.graphics.Paint.Style.STROKE);
-        paint.setStrokeWidth(dp(6));
-        paint.setColor(Color.rgb(175, 178, 182));
-        canvas.drawCircle(cx, cy, r - dp(15), paint);
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
 
-        paint.setStrokeWidth(dp(3));
-        paint.setColor(Color.rgb(35, 38, 42));
-        canvas.drawCircle(cx, cy, r - dp(23), paint);
+            float cx = getWidth() / 2f;
+            float cy = getHeight() / 2f;
+            float r = Math.min(cx, cy) * 0.95f;
 
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-
-        // Чёрная поверхность
-        paint.setShader(new android.graphics.RadialGradient(
-                cx - r * 0.2f,
-                cy - r * 0.2f,
-                r,
+            paint.setShader(new RadialGradient(
+                cx, cy, r,
                 new int[]{
-                        Color.rgb(85, 88, 92),
-                        Color.rgb(40, 42, 45),
-                        Color.rgb(8, 9, 11)
+                    Color.LTGRAY,
+                    Color.DKGRAY,
+                    Color.BLACK
                 },
-                null,
-                android.graphics.Shader.TileMode.CLAMP));
+                null, Shader.TileMode.CLAMP));
 
-        canvas.drawCircle(cx, cy, r - dp(26), paint);
-        paint.setShader(null);
+            canvas.drawCircle(cx, cy, r, paint);
+            paint.setShader(null);
 
-        // Центральное кольцо
-        paint.setColor(Color.rgb(75, 78, 82));
-        canvas.drawCircle(cx, cy, r * 0.39f, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setColor(Color.LTGRAY);
 
-        paint.setColor(Color.rgb(18, 20, 23));
-        canvas.drawCircle(cx, cy, r * 0.34f, paint);
+            for (int i = 0; i < 72; i++) {
+                canvas.save();
+                canvas.rotate(i * 5, cx, cy);
+                canvas.drawLine(
+                    cx, cy - r + dp(3),
+                    cx, cy - r + dp(13), paint);
+                canvas.restore();
+            }
 
-        // Центральная вставка
-        paint.setShader(new android.graphics.RadialGradient(
-                cx, cy, r * 0.28f,
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.rgb(30, 32, 35));
+            canvas.drawCircle(cx, cy, r - dp(17), paint);
+
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(5));
+            paint.setColor(Color.LTGRAY);
+            canvas.drawCircle(cx, cy, r - dp(20), paint);
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setShader(new RadialGradient(
+                cx - dp(12), cy - dp(12), r * 0.65f,
                 new int[]{
-                        Color.rgb(95, 98, 102),
-                        Color.rgb(35, 37, 40),
-                        Color.rgb(8, 9, 11)
+                    Color.rgb(100, 103, 108),
+                    Color.rgb(35, 37, 40),
+                    Color.BLACK
                 },
-                null,
-                android.graphics.Shader.TileMode.CLAMP));
+                null, Shader.TileMode.CLAMP));
 
-        canvas.drawCircle(cx, cy, r * 0.27f, paint);
-        paint.setShader(null);
+            canvas.drawCircle(cx, cy, r - dp(27), paint);
+            paint.setShader(null);
 
-        paint.setColor(Color.rgb(12, 14, 16));
-        canvas.drawCircle(cx, cy, r * 0.15f, paint);
+            paint.setColor(Color.rgb(65, 68, 72));
+            canvas.drawCircle(cx, cy, r * 0.36f, paint);
+
+            paint.setColor(Color.rgb(15, 17, 20));
+            canvas.drawCircle(cx, cy, r * 0.30f, paint);
+        }
     }
-}
-}
