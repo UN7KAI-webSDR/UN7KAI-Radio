@@ -411,7 +411,7 @@ private boolean kiwiConnected = false;
                     .setItems(names, (dialog, which) -> {
     JSONObject selected = allowed.get(which);
 
-    String serverUrl = selected.optString("url", "");
+   selectedServerUrl = selected.optString("url", "");
 
     status.setText(
         "SDR: " + selected.optString("name", "KiwiSDR")
