@@ -389,7 +389,8 @@ public class MainActivity extends Activity {
             paint.setColor(Color.rgb(65, 68, 72));
             canvas.drawCircle(cx, cy, r * 0.36f, paint);
 
-            paint.setColor(Color.rgb(15, 17, 20));
+           paint.setColor(Color.rgb(15, 17, 20));
             canvas.drawCircle(cx, cy, r * 0.30f, paint);
         }
     }
+}
