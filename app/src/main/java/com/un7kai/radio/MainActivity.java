@@ -315,12 +315,16 @@ public class MainActivity extends Activity {
     }
 
     private void showServerList() {
-        new android.app.AlertDialog.Builder(this)
-            .setTitle("SDR SERVER")
-            .setItems(new String[]{
-                "Барнаул — sdr.22dx.ru:8901"
-            }, (dialog, which) ->
-    private void openSdrTest() {
+    new android.app.AlertDialog.Builder(this)
+        .setTitle("SDR SERVER")
+        .setItems(new String[]{
+            "Барнаул — sdr.22dx.ru:8901"
+        }, (dialog, which) -> openSdrTest())
+        .setNegativeButton("Закрыть", null)
+        .show();
+}
+
+private void openSdrTest() {
 
     if (sdrWebView == null) {
         sdrWebView = new WebView(this);
