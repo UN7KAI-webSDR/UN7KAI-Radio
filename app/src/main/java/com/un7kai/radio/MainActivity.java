@@ -99,7 +99,14 @@ serverButton.setOnClickListener(v -> showServerList());
 tuneRow.setGravity(Gravity.CENTER);
 tuneRow.setPadding(0, dp(18), 0, dp(14));
 
-Button knob = button("▲", 32, Color.rgb(37, 40, 44), GREEN);
+DialView knob = new DialView(this);
+
+LinearLayout.LayoutParams knobParams =
+        new LinearLayout.LayoutParams(dp(150), dp(150));
+
+knobParams.setMargins(dp(8), 0, dp(8), 0);
+
+tuneRow.addView(knob, knobParams);
 
 android.graphics.drawable.GradientDrawable dial =
         new android.graphics.drawable.GradientDrawable(
@@ -367,4 +374,28 @@ private void openDirectory() {
     private int dp(int value) {
         return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
     }
+ private class DialView extends android.view.View {
+
+    private android.graphics.Paint paint =
+            new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+
+    public DialView(android.content.Context context) {
+        super(context);
+        setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null);
+    }
+
+    @Override
+    protected void onDraw(android.graphics.Canvas canvas) {
+        super.onDraw(canvas);
+
+        float cx = getWidth() / 2f;
+        float cy = getHeight() / 2f;
+        float r = Math.min(cx, cy) * 0.96f;
+
+        // Тень
+        paint.setShader(null);
+        paint.setColor(Color.BLACK);
+        paint.setShadowLayer(dp(8), dp(3), dp(5), Color.BLACK);
+        canvas.drawCircle(cx, cy, r, paint);
+        paint.clearShad…   
 }
