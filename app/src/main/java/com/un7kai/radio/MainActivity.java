@@ -331,6 +331,9 @@ private void openSdrTest() {
 
         WebSettings settings = sdrWebView.getSettings();
         settings.setJavaScriptEnabled(true);
+       settings.setUserAgentString(
+    "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36"
+); 
         settings.setDomStorageEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
 
