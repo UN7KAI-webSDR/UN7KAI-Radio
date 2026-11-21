@@ -326,32 +326,32 @@ public class MainActivity extends Activity {
     }
 private void openSdrTest() {
 
-    if (sdrWebView == null) {
-        sdrWebView = new WebView(this);
+    sdrWebView = new WebView(this);
 
-        WebSettings settings =
-            sdrWebView.getSettings();
+    WebSettings settings = sdrWebView.getSettings();
+    settings.setJavaScriptEnabled(true);
+    settings.setDomStorageEnabled(true);
+    settings.setMediaPlaybackRequiresUserGesture(false);
 
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setMediaPlaybackRequiresUserGesture(false);
+    sdrWebView.setWebChromeClient(
+        new WebChromeClient()
+    );
 
-        sdrWebView.setWebChromeClient(
-            new WebChromeClient()
-        );
-
-        root.addView(sdrWebView,
-            new LinearLayout.LayoutParams(
-                dp(1), dp(1)
-            )
-        );
-    }
+    sdrWebView.setLayoutParams(
+        new LinearLayout.LayoutParams(
+            -1, dp(500)
+        )
+    );
 
     sdrWebView.loadUrl(
         "http://sdr.22dx.ru:8901/"
     );
 
-    status.setText("ЗАГРУЗКА SDR БАРНАУЛ");
+    new android.app.AlertDialog.Builder(this)
+        .setTitle("SDR БАРНАУЛ — ТЕСТ")
+        .setView(sdrWebView)
+        .setNegativeButton("Закрыть", null)
+        .show();
 }
     private class DialView extends View {
         private final Paint paint = new Paint(
