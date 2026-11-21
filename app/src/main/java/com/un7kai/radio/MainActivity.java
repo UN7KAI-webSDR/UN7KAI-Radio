@@ -108,23 +108,6 @@ knobParams.setMargins(dp(8), 0, dp(8), 0);
 
 tuneRow.addView(knob, knobParams);
 
-android.graphics.drawable.GradientDrawable dial =
-        new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{
-                        Color.rgb(90, 95, 100),
-                        Color.rgb(35, 38, 42),
-                        Color.rgb(10, 12, 15)
-                });
-
-dial.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-dial.setStroke(dp(4), CYAN);
-knob.setBackground(dial);
-knob.setTextColor(Color.WHITE);
-knob.setRotation(0);
-
-tuneRow.addView(knob,
-        new LinearLayout.LayoutParams(dp(150), dp(150)));
 
 root.addView(tuneRow);
 
