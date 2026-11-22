@@ -384,7 +384,7 @@ private void startAudio() {
                                       Response response) {
                         webSocket.send("SET auth t=kiwi p=#");
                         webSocket.send("SET mod=lsb low_cut=-3000 high_cut=-300 freq=7129.1");
-                        webSocket.send("SET AR OK in=12000 out=44100");
+                      webSocket.send("SET AR OK in=12000 out=12000"); 
 
                         runOnUiThread(() ->
                             status.setText("SDR CONNECTED"));
