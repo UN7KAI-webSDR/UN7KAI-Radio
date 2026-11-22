@@ -371,6 +371,7 @@ powerButton.setOnClickListener(v -> {
         " freq=" + (frequencyHz / 1000.0);
 
     kiwiSocket.send(command);
+        status.setText("TX: " + frequencyHz + " Hz");
 }
 
     private void updateFrequency() {
