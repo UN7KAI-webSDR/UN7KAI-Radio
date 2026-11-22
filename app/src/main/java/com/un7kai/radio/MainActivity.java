@@ -58,7 +58,7 @@ private boolean audioStarted = false;
     private String selectedBand = "40 м";
     private String selectedMode = "LSB";
 
-    private int step = 100;
+    private int step = 10000;
     private long frequencyHz = 7129100L;
 
     @Override
@@ -159,10 +159,21 @@ private boolean audioStarted = false;
         DialView knob = new DialView(this);
         center.addView(knob,
             new LinearLayout.LayoutParams(dp(145), dp(145)));
+stepLabel = text("STEP: 10 kHz", 13, true, CYAN);
+center.addView(stepLabel);
 
-        stepLabel = text("STEP: 100 Hz", 13, true, CYAN);
-        center.addView(stepLabel);
+stepLabel.setOnClickListener(v -> {
+    if (step == 10000) {
+        step = 5000;
+    } else if (step == 5000) {
+        step = 1000;
+    } else {
+        step = 10000;
+    }
 
+    stepLabel.setText("STEP: " + (step / 1000) + " kHz");
+});
+        
         modeLabel = text("Режим: LSB", 12, true, GREEN);
         center.addView(modeLabel);
        knob.setOnTouchListener(new View.OnTouchListener() {
