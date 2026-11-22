@@ -398,7 +398,7 @@ powerButton.setOnClickListener(v -> {
         status.setText("ОШИБКА НАСТРОЙКИ SDR");
     }
 }
-}
+
 
     private void updateFrequency() {
         String raw = String.format(
