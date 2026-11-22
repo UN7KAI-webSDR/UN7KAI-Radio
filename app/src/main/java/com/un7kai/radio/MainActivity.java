@@ -47,6 +47,7 @@ private boolean kiwiConnected = false;
     private android.media.AudioTrack audioTrack;
     private String selectedServerUrl = "";
     private int audioSampleRate = 12000;
+    private boolean audioFlagShown = false;
 private boolean audioStarted = false;
     private boolean radioOn = true;
     private TextView frequency;
@@ -484,40 +485,46 @@ private void startAudio() {
                     }, 300);
                 }
 
-                @Override
-                public void onMessage(WebSocket ws, ByteString data) {
-                    byte[] frame = data.toByteArray();
+               @Override
+public void onMessage(WebSocket ws, ByteString data) {
+    byte[] frame = data.toByteArray();
 
-                    if (frame.length <= 10 ||
-                        frame[0] != 'S' ||
-                        frame[1] != 'N' ||
-                        frame[2] != 'D') return;
+    if (frame.length <= 10 ||
+        frame[0] != 'S' ||
+        frame[1] != 'N' ||
+        frame[2] != 'D') return;
 
-                   runOnUiThread(() ->
-    status.setText("AUDIO FLAGS: " + flags)
-);
+    int flags = frame[3] & 0xff;
 
-                    if ((flags & 0x10) != 0 ||
-                        (flags & 0x08) != 0) return;
+    if (!audioFlagShown) {
+        audioFlagShown = true;
+        runOnUiThread(() ->
+            status.setText("AUDIO FLAGS: " + flags)
+        );
+    }
 
-                    int offset = 10;
-                    int length = frame.length - offset;
-                    length -= length % 2;
+    if ((flags & 0x10) != 0 ||
+        (flags & 0x08) != 0) return;
 
-                    if (length <= 0 || audioTrack == null) return;
+    int offset = 10;
+    int length = frame.length - offset;
+    length -= length % 2;
 
-                    byte[] pcm = new byte[length];
+    if (length <= 0 || audioTrack == null) return;
 
-                    if ((flags & 0x80) != 0) {
-                        System.arraycopy(frame, offset, pcm, 0, length);
-                    } else {
-                        for (int i = 0; i < length; i += 2) {
-                            pcm[i] = frame[offset + i + 1];
-                            pcm[i + 1] = frame[offset + i];
-                        }
-                    }
+    byte[] pcm = new byte[length];
 
-                    audioTrack.write(pcm, 0, length);
+    if ((flags & 0x80) != 0) {
+        System.arraycopy(frame, offset, pcm, 0, length);
+    } else {
+        for (int i = 0; i < length; i += 2) {
+            pcm[i] = frame[offset + i + 1];
+            pcm[i + 1] = frame[offset + i];
+        }
+    }
+
+    audioTrack.write(pcm, 0, length);
+} 
                 }
 
                 @Override
