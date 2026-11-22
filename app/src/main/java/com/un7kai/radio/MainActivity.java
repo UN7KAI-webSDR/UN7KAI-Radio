@@ -4,6 +4,7 @@ import okhttp3.Request;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okhttp3.Response;
+import okio.ByteString;
 import android.webkit.WebView;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -360,51 +361,99 @@ private void startAudio() {
 
     audioStarted = false;
 }
-    private void connectKiwi(String serverUrl) {
+   private void connectKiwi(String serverUrl) {
     status.setText("Подключение SDR...");
 
-    new Thread(() -> {
-        try {
-            String host = serverUrl
-                .replace("http://", "")
-                .replace("https://", "");
+    try {
+        android.net.Uri uri = android.net.Uri.parse(serverUrl);
+        String host = uri.getHost();
+        int port = uri.getPort() > 0 ? uri.getPort() : 8073;
 
-            String wsUrl = "ws://" + host + "/" +
-                System.currentTimeMillis() + "/SND";
+        String wsUrl = "ws://" + host + ":" + port + "/"
+                + System.currentTimeMillis() + "/SND";
 
-            Request request = new Request.Builder()
+        Request request = new Request.Builder()
                 .url(wsUrl)
                 .build();
 
-            kiwiSocket = kiwiClient.newWebSocket(
-                request,
-                new WebSocketListener() {
-                    @Override
-                    public void onOpen(WebSocket webSocket,
-                                      Response response) {
-                        webSocket.send("SET auth t=kiwi p=#");
-                        webSocket.send("SET mod=lsb low_cut=-3000 high_cut=-300 freq=7129.1");
-                      webSocket.send("SET AR OK in=12000 out=12000"); 
+        kiwiSocket = kiwiClient.newWebSocket(
+            request,
+            new WebSocketListener() {
 
-                        runOnUiThread(() ->
-                            status.setText("SDR CONNECTED"));
-                    }
+                @Override
+                public void onOpen(WebSocket ws, Response response) {
+                    ws.send("SET auth t=kiwi p=#");
 
-                    @Override
-                    public void onFailure(WebSocket webSocket,
-                                         Throwable t,
-                                         Response response) {
-                        runOnUiThread(() ->
-                            status.setText("SDR ERROR"));
-                    }
+                    new android.os.Handler(
+                        android.os.Looper.getMainLooper()
+                    ).postDelayed(() -> {
+                        ws.send("SET compression=0");
+                        ws.send("SET keepalive");
+                        ws.send("SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
+                        ws.send("SET mod=lsb low_cut=-3000 high_cut=-300 freq=7129.1");
+                        ws.send("SET AR OK in=12000 out=12000");
+
+                        startAudio();
+
+                        status.setText("SDR CONNECTED");
+                    }, 300);
                 }
-            );
 
-        } catch (Exception e) {
-            runOnUiThread(() ->
-                status.setText("SDR ERROR"));
-        }
-    }).start();
+                @Override
+                public void onMessage(WebSocket ws, ByteString data) {
+                    byte[] frame = data.toByteArray();
+
+                    if (frame.length <= 10 ||
+                        frame[0] != 'S' ||
+                        frame[1] != 'N' ||
+                        frame[2] != 'D') return;
+
+                    int flags = frame[3] & 0xff;
+
+                    if ((flags & 0x10) != 0 ||
+                        (flags & 0x08) != 0) return;
+
+                    int offset = 10;
+                    int length = frame.length - offset;
+                    length -= length % 2;
+
+                    if (length <= 0 || audioTrack == null) return;
+
+                    byte[] pcm = new byte[length];
+
+                    if ((flags & 0x80) != 0) {
+                        System.arraycopy(frame, offset, pcm, 0, length);
+                    } else {
+                        for (int i = 0; i < length; i += 2) {
+                            pcm[i] = frame[offset + i + 1];
+                            pcm[i + 1] = frame[offset + i];
+                        }
+                    }
+
+                    audioTrack.write(pcm, 0, length);
+                }
+
+                @Override
+                public void onMessage(WebSocket ws, String message) {
+                    runOnUiThread(() ->
+                        status.setText("SDR: " + message));
+                }
+
+                @Override
+                public void onFailure(
+                    WebSocket ws,
+                    Throwable t,
+                    Response response
+                ) {
+                    runOnUiThread(() ->
+                        status.setText("SDR ERROR: " + t.getMessage()));
+                }
+            }
+        );
+
+    } catch (Exception e) {
+        status.setText("SDR ERROR: " + e.getMessage());
+    }
 }
     private void showServerList() {
 
