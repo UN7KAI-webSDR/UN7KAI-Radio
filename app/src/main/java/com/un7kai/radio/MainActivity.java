@@ -344,16 +344,24 @@ powerButton.setOnClickListener(v -> {
     updateFrequency();
     tuneKiwi();
 }
-    private void tuneKiwi() {
-    if (kiwiSocket == null) return;
+   private void tuneKiwi() {
+    if (kiwiSocket == null || !radioOn) {
+        return;
+    }
 
-    String mode = selectedMode.toLowerCase();
+    String mode = selectedMode.toLowerCase(
+        java.util.Locale.US
+    );
+
     int low = -3000;
     int high = -300;
 
     if (mode.equals("usb")) {
         low = 300;
         high = 2700;
+    } else if (mode.equals("lsb")) {
+        low = -2700;
+        high = -300;
     } else if (mode.equals("am")) {
         low = -4500;
         high = 4500;
@@ -366,13 +374,30 @@ powerButton.setOnClickListener(v -> {
         high = 6000;
     }
 
-    String command = "SET mod=" + mode +
-        " low_cut=" + low +
-        " high_cut=" + high +
-        " freq=" + (frequencyHz / 1000.0);
+    String command = String.format(
+        java.util.Locale.US,
+        "SET mod=%s low_cut=%d high_cut=%d freq=%.3f",
+        mode,
+        low,
+        high,
+        frequencyHz / 1000.0
+    );
 
-    kiwiSocket.send(command);
-        status.setText("TX: " + frequencyHz + " Hz");
+    boolean sent = kiwiSocket.send(command);
+
+    if (sent) {
+        status.setText(
+            "НАСТРОЙКА: " +
+            String.format(
+                java.util.Locale.US,
+                "%.3f MHz",
+                frequencyHz / 1000000.0
+            )
+        );
+    } else {
+        status.setText("ОШИБКА НАСТРОЙКИ SDR");
+    }
+}
 }
 
     private void updateFrequency() {
