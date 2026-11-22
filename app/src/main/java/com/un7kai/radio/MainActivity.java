@@ -103,10 +103,11 @@ private boolean audioStarted = false;
             modeRow.addView(b,
                 new LinearLayout.LayoutParams(0, dp(42), 1));
             b.setOnClickListener(v -> {
-                selectedMode = m;
-                modeLabel.setText("Режим: " + m);
-                bandLabel.setText(selectedBand + " • " + m);
-            });
+    selectedMode = m;
+    modeLabel.setText("Режим: " + m);
+    bandLabel.setText(selectedBand + " • " + m);
+    tuneKiwi();
+});
         }
 
         addTitle(left, "ДИАПАЗОНЫ");
@@ -343,14 +344,34 @@ powerButton.setOnClickListener(v -> {
     tuneKiwi();
 }
     private void tuneKiwi() {
-    if (kiwiSocket != null) {
-        String command = "SET mod=" +
-            selectedMode.toLowerCase() +
-            " low_cut=-3000 high_cut=-300 freq=" +
-            (frequencyHz / 1000.0);
+    if (kiwiSocket == null) return;
 
-        kiwiSocket.send(command);
+    String mode = selectedMode.toLowerCase();
+    int low = -3000;
+    int high = -300;
+
+    if (mode.equals("usb")) {
+        low = 300;
+        high = 2700;
+    } else if (mode.equals("am")) {
+        low = -4500;
+        high = 4500;
+    } else if (mode.equals("cw")) {
+        low = 300;
+        high = 800;
+    } else if (mode.equals("fm")) {
+        mode = "nfm";
+        low = -6000;
+        high = 6000;
     }
+
+    String command = "SET mod=" + mode +
+        " low_cut=" + low +
+        " high_cut=" + high +
+        " freq=" + (frequencyHz / 1000.0);
+
+    kiwiSocket.send(command);
+}
 }
     private void updateFrequency() {
         String raw = String.format(
@@ -449,7 +470,7 @@ private void startAudio() {
                         ws.send("SET compression=0");
                         ws.send("SET keepalive");
                         ws.send("SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
-                        ws.send("SET mod=lsb low_cut=-3000 high_cut=-300 freq=7129.1");
+                       tuneKiwi();
                         ws.send("SET AR OK in=12000 out=12000");
 
                         startAudio();
