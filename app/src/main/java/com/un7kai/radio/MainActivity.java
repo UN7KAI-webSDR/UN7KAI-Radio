@@ -48,6 +48,7 @@ private boolean kiwiConnected = false;
     private String selectedServerUrl = "";
     private int audioSampleRate = 12000;
 private boolean audioStarted = false;
+    private boolean radioOn = true;
     private TextView frequency;
     private TextView bandLabel;
     private TextView status;
@@ -230,6 +231,33 @@ private boolean audioStarted = false;
         Button serverButton = button("SDR СЕРВЕРА");
         right.addView(serverButton, buttonParams());
         serverButton.setOnClickListener(v -> showServerList());
+        Button powerButton = button("ВЫКЛЮЧИТЬ РАДИО");
+right.addView(powerButton, buttonParams());
+
+powerButton.setOnClickListener(v -> {
+    if (radioOn) {
+        radioOn = false;
+
+        if (kiwiSocket != null) {
+            kiwiSocket.close(1000, "Radio OFF");
+            kiwiSocket = null;
+        }
+
+        stopAudio();
+        powerButton.setText("ВКЛЮЧИТЬ РАДИО");
+        status.setText("РАДИО ВЫКЛЮЧЕНО");
+
+    } else {
+        radioOn = true;
+        powerButton.setText("ВЫКЛЮЧИТЬ РАДИО");
+
+        if (!selectedServerUrl.isEmpty()) {
+            connectKiwi(selectedServerUrl);
+        } else {
+            showServerList();
+        }
+    }
+});
 
         Button mapButton = button("MAP");
         right.addView(mapButton, buttonParams());
@@ -290,11 +318,21 @@ private boolean audioStarted = false;
             getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    private void changeFrequency(long delta) {
-        frequencyHz = Math.max(1000, frequencyHz + delta);
-        updateFrequency();
-    }
+   private void changeFrequency(long delta) {
+    frequencyHz = Math.max(1000, frequencyHz + delta);
+    updateFrequency();
+    tuneKiwi();
+}
+    private void tuneKiwi() {
+    if (kiwiSocket != null) {
+        String command = "SET mod=" +
+            selectedMode.toLowerCase() +
+            " low_cut=-3000 high_cut=-300 freq=" +
+            (frequencyHz / 1000.0);
 
+        kiwiSocket.send(command);
+    }
+}
     private void updateFrequency() {
         String raw = String.format(
             java.util.Locale.US, "%,d", frequencyHz)
