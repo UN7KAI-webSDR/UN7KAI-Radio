@@ -493,7 +493,9 @@ private void startAudio() {
                         frame[1] != 'N' ||
                         frame[2] != 'D') return;
 
-                    int flags = frame[3] & 0xff;
+                   runOnUiThread(() ->
+    status.setText("AUDIO FLAGS: " + flags)
+);
 
                     if ((flags & 0x10) != 0 ||
                         (flags & 0x08) != 0) return;
