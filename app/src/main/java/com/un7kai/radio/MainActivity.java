@@ -380,22 +380,26 @@ powerButton.setOnClickListener(v -> {
         frequency.setText(raw);
     }
 
-    private void selectBand(String band) {
-        selectedBand = band;
+   private void selectBand(String band) {
+    selectedBand = band;
 
-        if (band.equals("160 м")) frequencyHz = 1900000;
-        else if (band.equals("80 м")) frequencyHz = 3700000;
-        else if (band.equals("40 м")) frequencyHz = 7129100;
-        else if (band.equals("20 м")) frequencyHz = 14150000;
-        else if (band.equals("15 м")) frequencyHz = 21200000;
-        else if (band.equals("10 м")) frequencyHz = 28400000;
-        else if (band.equals("2 м")) frequencyHz = 145500000;
-        else if (band.equals("70 см")) frequencyHz = 433500000;
+    if (band.equals("160 м")) frequencyHz = 1900000L;
+    else if (band.equals("80 м")) frequencyHz = 3700000L;
+    else if (band.equals("40 м")) frequencyHz = 7129100L;
+    else if (band.equals("20 м")) frequencyHz = 14150000L;
+    else if (band.equals("15 м")) frequencyHz = 21200000L;
+    else if (band.equals("10 м")) frequencyHz = 28400000L;
+    else if (band.equals("2 м")) frequencyHz = 145500000L;
+    else if (band.equals("70 см")) frequencyHz = 433500000L;
 
-        updateFrequency();
-        bandLabel.setText(selectedBand + " • " + selectedMode);
-        status.setText("UN7KAI • " + selectedBand);
-    }
+    updateFrequency();
+
+    bandLabel.setText(selectedBand + " • " + selectedMode);
+
+    status.setText("ДИАПАЗОН: " + selectedBand);
+
+    tuneKiwi();
+}
 
    private void cycleStep() {
     if (step == 1000) step = 500;
