@@ -535,19 +535,42 @@ private void startAudio() {
             java.util.ArrayList<JSONObject> allowed =
                 new java.util.ArrayList<>();
 
-            for (int i = 0; i < all.length(); i++) {
-                JSONObject s = all.getJSONObject(i);
+           for (int i = 0; i < all.length(); i++) {
+    JSONObject s = all.getJSONObject(i);
 
-                if (!s.has("ext_api") ||
-                    s.optInt("ext_api", 0) <= 0 ||
-                    s.optBoolean("offline", true) ||
-                    s.optBoolean("flagged", true) ||
-                    s.optString("url", "").isEmpty()) {
-                    continue;
-                }
+    if (!s.has("ext_api") ||
+        s.optInt("ext_api", 0) <= 0 ||
+        s.optBoolean("offline", true) ||
+        s.optBoolean("flagged", true) ||
+        s.optString("url", "").isEmpty()) {
+        continue;
+    }
 
-                allowed.add(s);
-            }
+    String place = (
+        s.optString("loc", "") + " " +
+        s.optString("name", "")
+    ).toLowerCase(java.util.Locale.ROOT);
+
+    boolean wanted =
+        place.contains("казахстан") ||
+        place.contains("kazakhstan") ||
+        place.contains("узбекистан") ||
+        place.contains("uzbekistan") ||
+        place.contains("кыргызстан") ||
+        place.contains("kyrgyzstan") ||
+        place.contains("таджикистан") ||
+        place.contains("tajikistan") ||
+        place.contains("туркменистан") ||
+        place.contains("turkmenistan") ||
+        place.contains("россия") ||
+        place.contains("russia") ||
+        place.contains("украина") ||
+        place.contains("ukraine");
+
+    if (wanted) {
+        allowed.add(s);
+    }
+}
 
             runOnUiThread(() -> {
                 if (allowed.isEmpty()) {
