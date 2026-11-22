@@ -548,7 +548,7 @@ private void startAudio() {
 
     allowed.add(s);
 }
-}
+
 
             runOnUiThread(() -> {
                 if (allowed.isEmpty()) {
