@@ -43,7 +43,10 @@ public class MainActivity extends Activity {
     private OkHttpClient kiwiClient;
 private WebSocket kiwiSocket;
 private boolean kiwiConnected = false;
+    private android.media.AudioTrack audioTrack;
     private String selectedServerUrl = "";
+    private int audioSampleRate = 12000;
+private boolean audioStarted = false;
     private TextView frequency;
     private TextView bandLabel;
     private TextView status;
@@ -329,7 +332,80 @@ private boolean kiwiConnected = false;
             .setPositiveButton("OK", null)
             .show();
     }
+private void startAudio() {
+    int bufferSize = android.media.AudioTrack.getMinBufferSize(
+        audioSampleRate,
+        android.media.AudioFormat.CHANNEL_OUT_MONO,
+        android.media.AudioFormat.ENCODING_PCM_16BIT
+    );
 
+    audioTrack = new android.media.AudioTrack(
+        android.media.AudioManager.STREAM_MUSIC,
+        audioSampleRate,
+        android.media.AudioFormat.CHANNEL_OUT_MONO,
+        android.media.AudioFormat.ENCODING_PCM_16BIT,
+        bufferSize * 2,
+        android.media.AudioTrack.MODE_STREAM
+    );
+
+    audioTrack.play();
+    audioStarted = true;
+}
+    private void stopAudio() {
+    if (audioTrack != null) {
+        audioTrack.stop();
+        audioTrack.release();
+        audioTrack = null;
+    }
+
+    audioStarted = false;
+}
+    private void connectKiwi(String serverUrl) {
+    status.setText("Подключение SDR...");
+
+    new Thread(() -> {
+        try {
+            String host = serverUrl
+                .replace("http://", "")
+                .replace("https://", "");
+
+            String wsUrl = "ws://" + host + "/" +
+                System.currentTimeMillis() + "/SND";
+
+            Request request = new Request.Builder()
+                .url(wsUrl)
+                .build();
+
+            kiwiSocket = kiwiClient.newWebSocket(
+                request,
+                new WebSocketListener() {
+                    @Override
+                    public void onOpen(WebSocket webSocket,
+                                      Response response) {
+                        webSocket.send("SET auth t=kiwi p=#");
+                        webSocket.send("SET mod=lsb low_cut=-3000 high_cut=-300 freq=7129.1");
+                        webSocket.send("SET AR OK in=12000 out=44100");
+
+                        runOnUiThread(() ->
+                            status.setText("SDR CONNECTED"));
+                    }
+
+                    @Override
+                    public void onFailure(WebSocket webSocket,
+                                         Throwable t,
+                                         Response response) {
+                        runOnUiThread(() ->
+                            status.setText("SDR ERROR"));
+                    }
+                }
+            );
+
+        } catch (Exception e) {
+            runOnUiThread(() ->
+                status.setText("SDR ERROR"));
+        }
+    }).start();
+}
     private void showServerList() {
 
     new Thread(() -> {
@@ -413,7 +489,9 @@ private boolean kiwiConnected = false;
     JSONObject selected = allowed.get(which);
 
    selectedServerUrl = selected.optString("url", "");
+stopAudio();
 
+connectKiwi(selectedServerUrl);
     status.setText(
         "SDR: " + selected.optString("name", "KiwiSDR")
     );
