@@ -376,14 +376,16 @@ powerButton.setOnClickListener(v -> {
         status.setText("UN7KAI • " + selectedBand);
     }
 
-    private void cycleStep() {
-        if (step == 100) step = 500;
-        else if (step == 500) step = 1000;
-        else step = 100;
+   private void cycleStep() {
+    if (step == 1000) step = 500;
+    else if (step == 500) step = 100;
+    else if (step == 100) step = 50;
+    else if (step == 50) step = 10;
+    else if (step == 10) step = 1;
+    else step = 1000;
 
-        stepLabel.setText("STEP: " + step + " Hz");
-    }
-
+    stepLabel.setText("STEP: " + step + " Hz");
+}
     private void showMessage(String message) {
         new android.app.AlertDialog.Builder(this)
             .setMessage(message)
