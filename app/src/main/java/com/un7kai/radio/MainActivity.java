@@ -372,7 +372,7 @@ powerButton.setOnClickListener(v -> {
 
     kiwiSocket.send(command);
 }
-}
+
     private void updateFrequency() {
         String raw = String.format(
             java.util.Locale.US, "%,d", frequencyHz)
