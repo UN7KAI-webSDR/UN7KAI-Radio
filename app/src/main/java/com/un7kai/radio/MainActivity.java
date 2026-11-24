@@ -33,7 +33,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class MainActivity extends Activity {
-
     private final int BG = Color.rgb(5, 7, 9);
     private final int PANEL = Color.rgb(25, 29, 33);
     private final int GREEN = Color.rgb(0, 245, 55);
@@ -737,7 +736,7 @@ private void startAudio() {
         }
 
     }).start();
-}
+
 }
     private int countryPriority(JSONObject s) {
 
@@ -1025,4 +1024,5 @@ private class WaterfallView extends View {
                     paint);
         }
     }
-}}
+}
+}
