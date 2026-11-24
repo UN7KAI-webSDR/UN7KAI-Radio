@@ -351,9 +351,9 @@ powerButton.setOnClickListener(v -> {
     tuneKiwi();
 }
    private void tuneKiwi() {
-    if (kiwiSocket == null || !radioOn) {
-        return;
-    }
+    if (kiwiSocket == null || !radioOn || !kiwiConnected) {
+    return;
+}
 
     String mode = selectedMode.toLowerCase(
         java.util.Locale.US
@@ -499,6 +499,7 @@ private void startAudio() {
 
                 @Override
                 public void onOpen(WebSocket ws, Response response) {
+                    kiwiConnected = true;
                     ws.send("SET auth t=kiwi p=#");
 
                     new android.os.Handler(
@@ -569,7 +570,7 @@ public void onMessage(WebSocket ws, ByteString data) {
                     WebSocket ws,
                     Throwable t,
                     Response response
-                ) {
+                ) {kiwiConnected = false;
                     runOnUiThread(() ->
                         status.setText("SDR ERROR: " + t.getMessage()));
                 }
@@ -579,6 +580,10 @@ public void onMessage(WebSocket ws, ByteString data) {
     } catch (Exception e) {
         status.setText("SDR ERROR: " + e.getMessage());
     }
+       @Override
+public void onClosed(WebSocket ws, int code, String reason) {
+    kiwiConnected = false;
+}
 }
     private void showServerList() {
 
@@ -743,16 +748,16 @@ private void connectWaterfall(String serverUrl) {
                     });
                 }
 
-                @Override
-                public void onFailure(
-                    WebSocket ws,
-                    Throwable t,
-                    Response response
-                ) {
-                    runOnUiThread(() ->
-                        status.setText("WF ERROR: " + t.getMessage())
-                    );
-                }
+              @Override
+public void onFailure(
+    WebSocket ws,
+    Throwable t,
+    Response response
+) {
+    runOnUiThread(() ->
+        status.setText("WF ERROR: " + t.getMessage())
+    );
+}
             }
         );
 
