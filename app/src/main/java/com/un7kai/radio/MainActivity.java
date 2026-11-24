@@ -49,6 +49,7 @@ private WebSocket kiwiSocket;
 private boolean kiwiConnected = false;
     private android.media.AudioTrack audioTrack;
     private String selectedServerUrl = "";
+    private int selectedServerIndex = 0;
     private int audioSampleRate = 12000;
     private boolean audioFlagShown = false;
 private boolean audioStarted = false;
@@ -590,110 +591,58 @@ private void startAudio() {
 }
    private void showServerList() {
 
-    new Thread(() -> {
-        HttpURLConnection connection = null;
+    int currentIndex = 0;
 
-        try {
-            URL url = new URL(
-                "https://cdn.aethersdr.com/kiwi.json"
+if (!selectedServerUrl.isEmpty()) {
+    for (int i = 0; i < allowed.size(); i++) {
+        if (selectedServerUrl.equals(
+                allowed.get(i).optString("url", ""))) {
+            currentIndex = i;
+            break;
+        }
+    }
+}
+
+selectedServerIndex = currentIndex;
+
+android.widget.ArrayAdapter<String> adapter =
+    new android.widget.ArrayAdapter<>(
+        MainActivity.this,
+        android.R.layout.simple_list_item_1,
+        names
+    );
+
+android.app.AlertDialog dialog =
+    new android.app.AlertDialog.Builder(this)
+        .setTitle("KIWISDR — " + allowed.size() + " серверов")
+        .setAdapter(adapter, (d, which) -> {
+
+            selectedServerIndex = which;
+
+            JSONObject selected = allowed.get(which);
+
+            selectedServerUrl =
+                selected.optString("url", "");
+
+            stopAudio();
+
+            connectKiwi(selectedServerUrl);
+            connectWaterfall(selectedServerUrl);
+
+            status.setText(
+                "SDR: " +
+                selected.optString("name", "KiwiSDR")
             );
 
-            connection = (HttpURLConnection)
-                url.openConnection();
-
-            connection.setConnectTimeout(15000);
-            connection.setReadTimeout(20000);
-
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(connection.getInputStream())
+            showMessage(
+                "Выбран сервер:\n" + selectedServerUrl
             );
+        })
+        .setNegativeButton("Закрыть", null)
+        .create();
 
-            StringBuilder json = new StringBuilder();
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                json.append(line);
-            }
-
-            reader.close();
-
-            JSONObject data = new JSONObject(json.toString());
-
-            if (data.optInt("schema", -1) != 1) {
-                throw new Exception("Неизвестная версия каталога");
-            }
-
-            JSONArray all = data.getJSONArray("receivers");
-
-            java.util.ArrayList<JSONObject> allowed =
-                new java.util.ArrayList<>();
-
-            for (int i = 0; i < all.length(); i++) {
-                JSONObject s = all.getJSONObject(i);
-
-                if (!s.has("ext_api") ||
-                    s.optInt("ext_api", 0) <= 0 ||
-                    s.optBoolean("offline", true) ||
-                    s.optBoolean("flagged", true) ||
-                    s.optString("url", "").isEmpty()) {
-                    continue;
-                }
-
-                allowed.add(s);
-            }
-
-            java.util.Collections.sort(
-                allowed,
-                (a, b) -> Integer.compare(
-                    countryPriority(a),
-                    countryPriority(b)
-                )
-            );
-
-            runOnUiThread(() -> {
-                if (allowed.isEmpty()) {
-                    showMessage("Доступных серверов пока нет");
-                    return;
-                }
-
-                String[] names = new String[allowed.size()];
-
-                for (int i = 0; i < allowed.size(); i++) {
-                    JSONObject s = allowed.get(i);
-
-                    names[i] =
-                        s.optString("name", "KiwiSDR") +
-                        "\n" +
-                        s.optString("loc", "Место не указано") +
-                        " | Пользователи: " +
-                        s.optInt("users", 0) + "/" +
-                        s.optInt("users_max", 0);
-                }
-
-                new android.app.AlertDialog.Builder(this)
-                    .setTitle("KIWISDR — " + allowed.size() + " серверов")
-                    .setItems(names, (dialog, which) -> {
-
-                        JSONObject selected = allowed.get(which);
-
-                        selectedServerUrl =
-                            selected.optString("url", "");
-
-                        stopAudio();
-
-                        connectKiwi(selectedServerUrl);
-                        connectWaterfall(selectedServerUrl);
-
-                        status.setText(
-                            "SDR: " +
-                            selected.optString("name", "KiwiSDR")
-                        );
-
-                        showMessage(
-                            "Выбран сервер:\n" + selectedServerUrl
-                        );
-                    })
-                    .setNegativeButton("Закрыть", null)
+dialog.show();
+dialog.getListView().setSelection(selectedServerIndex);
                     .show();
             });
 
