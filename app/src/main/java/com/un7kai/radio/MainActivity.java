@@ -589,61 +589,140 @@ private void startAudio() {
         status.setText("SDR ERROR: " + e.getMessage());
     }
 }
-   private void showServerList() {
+  private void showServerList() {
 
-    int currentIndex = 0;
+    new Thread(() -> {
+        HttpURLConnection connection = null;
 
-if (!selectedServerUrl.isEmpty()) {
-    for (int i = 0; i < allowed.size(); i++) {
-        if (selectedServerUrl.equals(
-                allowed.get(i).optString("url", ""))) {
-            currentIndex = i;
-            break;
-        }
-    }
-}
-
-selectedServerIndex = currentIndex;
-
-android.widget.ArrayAdapter<String> adapter =
-    new android.widget.ArrayAdapter<>(
-        MainActivity.this,
-        android.R.layout.simple_list_item_1,
-        names
-    );
-
-android.app.AlertDialog dialog =
-    new android.app.AlertDialog.Builder(this)
-        .setTitle("KIWISDR — " + allowed.size() + " серверов")
-        .setAdapter(adapter, (d, which) -> {
-
-            selectedServerIndex = which;
-
-            JSONObject selected = allowed.get(which);
-
-            selectedServerUrl =
-                selected.optString("url", "");
-
-            stopAudio();
-
-            connectKiwi(selectedServerUrl);
-            connectWaterfall(selectedServerUrl);
-
-            status.setText(
-                "SDR: " +
-                selected.optString("name", "KiwiSDR")
+        try {
+            URL url = new URL(
+                "https://cdn.aethersdr.com/kiwi.json"
             );
 
-            showMessage(
-                "Выбран сервер:\n" + selectedServerUrl
-            );
-        })
-        .setNegativeButton("Закрыть", null)
-        .create();
+            connection = (HttpURLConnection)
+                url.openConnection();
 
-dialog.show();
-dialog.getListView().setSelection(selectedServerIndex);
-                    .show();
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(20000);
+
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(connection.getInputStream())
+            );
+
+            StringBuilder json = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                json.append(line);
+            }
+
+            reader.close();
+
+            JSONObject data = new JSONObject(json.toString());
+
+            if (data.optInt("schema", -1) != 1) {
+                throw new Exception("Неизвестная версия каталога");
+            }
+
+            JSONArray all = data.getJSONArray("receivers");
+
+            java.util.ArrayList<JSONObject> allowed =
+                new java.util.ArrayList<>();
+
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject s = all.getJSONObject(i);
+
+                if (!s.has("ext_api") ||
+                    s.optInt("ext_api", 0) <= 0 ||
+                    s.optBoolean("offline", true) ||
+                    s.optBoolean("flagged", true) ||
+                    s.optString("url", "").isEmpty()) {
+                    continue;
+                }
+
+                allowed.add(s);
+            }
+
+            java.util.Collections.sort(
+                allowed,
+                (a, b) -> Integer.compare(
+                    countryPriority(a),
+                    countryPriority(b)
+                )
+            );
+
+            runOnUiThread(() -> {
+                if (allowed.isEmpty()) {
+                    showMessage("Доступных серверов пока нет");
+                    return;
+                }
+
+                String[] names = new String[allowed.size()];
+
+                for (int i = 0; i < allowed.size(); i++) {
+                    JSONObject s = allowed.get(i);
+
+                    names[i] =
+                        s.optString("name", "KiwiSDR") +
+                        "\n" +
+                        s.optString("loc", "Место не указано") +
+                        " | Пользователи: " +
+                        s.optInt("users", 0) + "/" +
+                        s.optInt("users_max", 0);
+                }
+
+                int currentIndex = 0;
+
+                if (!selectedServerUrl.isEmpty()) {
+                    for (int i = 0; i < allowed.size(); i++) {
+                        if (selectedServerUrl.equals(
+                                allowed.get(i).optString("url", ""))) {
+                            currentIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                selectedServerIndex = currentIndex;
+
+                android.widget.ArrayAdapter<String> adapter =
+                    new android.widget.ArrayAdapter<>(
+                        MainActivity.this,
+                        android.R.layout.simple_list_item_1,
+                        names
+                    );
+
+                android.app.AlertDialog dialog =
+                    new android.app.AlertDialog.Builder(this)
+                        .setTitle("KIWISDR — " + allowed.size() + " серверов")
+                        .setAdapter(adapter, (d, which) -> {
+
+                            selectedServerIndex = which;
+
+                            JSONObject selected = allowed.get(which);
+
+                            selectedServerUrl =
+                                selected.optString("url", "");
+
+                            stopAudio();
+
+                            connectKiwi(selectedServerUrl);
+                            connectWaterfall(selectedServerUrl);
+
+                            status.setText(
+                                "SDR: " +
+                                selected.optString("name", "KiwiSDR")
+                            );
+
+                            showMessage(
+                                "Выбран сервер:\n" + selectedServerUrl
+                            );
+                        })
+                        .setNegativeButton("Закрыть", null)
+                        .create();
+
+                dialog.show();
+                dialog.getListView().setSelection(selectedServerIndex);
             });
 
         } catch (Exception e) {
@@ -658,6 +737,7 @@ dialog.getListView().setSelection(selectedServerIndex);
         }
 
     }).start();
+}
 }
     private int countryPriority(JSONObject s) {
 
