@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.Paint;
 import android.graphics.Canvas;
@@ -43,6 +44,8 @@ public class MainActivity extends Activity {
     private WebView sdrWebView;
     private OkHttpClient kiwiClient;
 private WebSocket kiwiSocket;
+    private WebSocket waterfallSocket;
+    private WaterfallView waterfallView;
 private boolean kiwiConnected = false;
     private android.media.AudioTrack audioTrack;
     private String selectedServerUrl = "";
@@ -146,17 +149,15 @@ private boolean audioStarted = false;
         bandLabel = text("40 м • LSB", 14, true, CYAN);
         center.addView(bandLabel);
 
-        TextView spectrum = text(
-            "〰  SPECTRUM / WATERFALL  〰",
-            15, true, GREEN);
-        spectrum.setGravity(Gravity.CENTER);
-        spectrum.setBackground(panelBackground(
-            Color.rgb(10, 22, 25), 8, CYAN));
-        LinearLayout.LayoutParams sp =
-            new LinearLayout.LayoutParams(
-                -1, 0, 1);
-        sp.setMargins(dp(4), dp(8), dp(4), dp(8));
-        center.addView(spectrum, sp);
+       waterfallView = new WaterfallView(this);
+waterfallView.setBackgroundColor(Color.BLACK);
+
+LinearLayout.LayoutParams sp =
+    new LinearLayout.LayoutParams(
+        -1, 0, 1);
+
+sp.setMargins(dp(4), dp(8), dp(4), dp(8));
+center.addView(waterfallView, sp);
 
         DialView knob = new DialView(this);
         center.addView(knob,
@@ -263,6 +264,10 @@ powerButton.setOnClickListener(v -> {
             kiwiSocket.close(1000, "Radio OFF");
             kiwiSocket = null;
         }
+        if (waterfallSocket != null) {
+    waterfallSocket.close(1000, "Radio OFF");
+    waterfallSocket = null;
+}
 
         stopAudio();
         powerButton.setText("ВКЛЮЧИТЬ РАДИО");
@@ -274,6 +279,7 @@ powerButton.setOnClickListener(v -> {
 
         if (!selectedServerUrl.isEmpty()) {
             connectKiwi(selectedServerUrl);
+            connectWaterfall(selectedServerUrl);
         } else {
             showServerList();
         }
@@ -661,6 +667,7 @@ public void onMessage(WebSocket ws, ByteString data) {
 stopAudio();
 
 connectKiwi(selectedServerUrl);
+                        connectWaterfall(selectedServerUrl);
     status.setText(
         "SDR: " + selected.optString("name", "KiwiSDR")
     );
@@ -684,7 +691,75 @@ connectKiwi(selectedServerUrl);
 
     }).start();
 }
+private void connectWaterfall(String serverUrl) {
+    try {
+        if (waterfallSocket != null) {
+            waterfallSocket.close(1000, "Switch SDR");
+            waterfallSocket = null;
+        }
+        android.net.Uri uri =
+            android.net.Uri.parse(serverUrl);
 
+        String host = uri.getHost();
+        int port = uri.getPort() > 0 ? uri.getPort() : 8073;
+
+        String wfUrl = "ws://" + host + ":" + port +
+            "/" + System.currentTimeMillis() + "/W/F";
+
+        Request request = new Request.Builder()
+            .url(wfUrl)
+            .build();
+
+        waterfallSocket = kiwiClient.newWebSocket(
+            request,
+            new WebSocketListener() {
+
+                @Override
+                public void onOpen(WebSocket ws, Response response) {
+                    ws.send("SET auth t=kiwi p=#");
+                    ws.send("SET wf_comp=0");
+                    ws.send("SET zoom=0 start=0");
+                    ws.send("SET maxdb=-10 mindb=-110");
+                    ws.send("SET wf_speed=4");
+                }
+
+                @Override
+                public void onMessage(WebSocket ws, ByteString data) {
+                    byte[] frame = data.toByteArray();
+
+                    if (frame.length <= 16 ||
+                        frame[0] != 'W' ||
+                        frame[1] != '/' ||
+                        frame[2] != 'F') return;
+
+                   byte[] row = java.util.Arrays.copyOfRange(frame, 16, frame.length);
+
+                    runOnUiThread(() -> {
+                        if (waterfallView != null) {
+                           waterfallView.addWaterfallRow(
+    row, 0, row.length
+);
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(
+                    WebSocket ws,
+                    Throwable t,
+                    Response response
+                ) {
+                    runOnUiThread(() ->
+                        status.setText("WF ERROR: " + t.getMessage())
+                    );
+                }
+            }
+        );
+
+    } catch (Exception e) {
+        status.setText("WF ERROR: " + e.getMessage());
+    }
+}
 private void openSdrTest() {
 
     if (sdrWebView == null) {
@@ -786,4 +861,78 @@ private void openSdrTest() {
             canvas.drawCircle(cx, cy, r * 0.30f, paint);
         }
     }
-}
+private class WaterfallView extends View {
+
+    private Bitmap bitmap;
+    private Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private int[] pixels;
+    private int wfWidth;
+    private int wfHeight;
+
+    public WaterfallView(android.content.Context context) {
+        super(context);
+        setBackgroundColor(Color.BLACK);
+    }
+
+    @Override
+    protected void onSizeChanged(
+            int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+
+        if (w <= 0 || h <= 0) return;
+
+        wfWidth = w;
+        wfHeight = h;
+
+        bitmap = Bitmap.createBitmap(
+                w, h, Bitmap.Config.ARGB_8888);
+
+        pixels = new int[w * h];
+        java.util.Arrays.fill(pixels, Color.BLACK);
+    }
+
+    public void addWaterfallRow(
+            byte[] data, int offset, int length) {
+
+        if (bitmap == null || pixels == null ||
+                data == null || length <= 0) return;
+
+        System.arraycopy(
+                pixels, 0,
+                pixels, wfWidth,
+                wfWidth * (wfHeight - 1));
+
+        for (int x = 0; x < wfWidth; x++) {
+
+            int index = offset +
+                    (int)((long)x * length / wfWidth);
+
+            int value = data[index] & 0xFF;
+
+            int r = Math.min(255, value * 2);
+            int g = Math.min(255, value * 3);
+            int b = Math.min(255, 80 + value);
+
+            pixels[x] = Color.rgb(r, g, b);
+        }
+
+        bitmap.setPixels(
+                pixels, 0, wfWidth,
+                0, 0, wfWidth, wfHeight);
+
+        postInvalidate();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        if (bitmap != null) {
+            canvas.drawBitmap(
+                    bitmap, null,
+                    new android.graphics.Rect(
+                            0, 0, getWidth(), getHeight()),
+                    paint);
+        }
+    }
+}}
