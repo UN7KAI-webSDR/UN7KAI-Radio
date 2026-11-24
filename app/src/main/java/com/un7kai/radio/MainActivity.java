@@ -774,6 +774,9 @@ private void connectWaterfall(String serverUrl) {
 
                 @Override
                 public void onOpen(WebSocket ws, Response response) {
+                    runOnUiThread(() ->
+    status.setText("WATERFALL CONNECTED")
+);
                     ws.send("SET auth t=kiwi p=#");
                     ws.send("SET wf_comp=0");
                     ws.send("SET zoom=0 start=0");
