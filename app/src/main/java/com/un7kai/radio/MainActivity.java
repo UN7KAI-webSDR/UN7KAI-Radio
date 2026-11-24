@@ -508,61 +508,61 @@ private void startAudio() {
                         ws.send("SET compression=0");
                         ws.send("SET keepalive");
                         ws.send("SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
-                       tuneKiwi();
+
+                        tuneKiwi();
                         ws.send("SET AR OK in=12000 out=12000");
 
                         startAudio();
-
                         status.setText("SDR CONNECTED");
                     }, 300);
                 }
 
-               @Override
-public void onMessage(WebSocket ws, ByteString data) {
-    byte[] frame = data.toByteArray();
+                @Override
+                public void onMessage(WebSocket ws, ByteString data) {
+                    byte[] frame = data.toByteArray();
 
-    if (frame.length <= 10 ||
-        frame[0] != 'S' ||
-        frame[1] != 'N' ||
-        frame[2] != 'D') return;
+                    if (frame.length <= 10 ||
+                        frame[0] != 'S' ||
+                        frame[1] != 'N' ||
+                        frame[2] != 'D') return;
 
-    int flags = frame[3] & 0xff;
+                    int flags = frame[3] & 0xff;
 
-    if (!audioFlagShown) {
-        audioFlagShown = true;
-        runOnUiThread(() ->
-            status.setText("AUDIO FLAGS: " + flags)
-        );
-    }
+                    if (!audioFlagShown) {
+                        audioFlagShown = true;
+                        runOnUiThread(() ->
+                            status.setText("AUDIO FLAGS: " + flags)
+                        );
+                    }
 
-    if ((flags & 0x10) != 0 ||
-        (flags & 0x08) != 0) return;
+                    if ((flags & 0x10) != 0 ||
+                        (flags & 0x08) != 0) return;
 
-    int offset = 10;
-    int length = frame.length - offset;
-    length -= length % 2;
+                    int offset = 10;
+                    int length = frame.length - offset;
+                    length -= length % 2;
 
-    if (length <= 0 || audioTrack == null) return;
+                    if (length <= 0 || audioTrack == null) return;
 
-    byte[] pcm = new byte[length];
+                    byte[] pcm = new byte[length];
 
-    if ((flags & 0x80) != 0) {
-        System.arraycopy(frame, offset, pcm, 0, length);
-    } else {
-        for (int i = 0; i < length; i += 2) {
-            pcm[i] = frame[offset + i + 1];
-            pcm[i + 1] = frame[offset + i];
-        }
-    }
+                    if ((flags & 0x80) != 0) {
+                        System.arraycopy(frame, offset, pcm, 0, length);
+                    } else {
+                        for (int i = 0; i < length; i += 2) {
+                            pcm[i] = frame[offset + i + 1];
+                            pcm[i + 1] = frame[offset + i];
+                        }
+                    }
 
-    audioTrack.write(pcm, 0, length);
-} 
-                
+                    audioTrack.write(pcm, 0, length);
+                }
 
                 @Override
                 public void onMessage(WebSocket ws, String message) {
                     runOnUiThread(() ->
-                        status.setText("SDR: " + message));
+                        status.setText("SDR: " + message)
+                    );
                 }
 
                 @Override
@@ -570,9 +570,16 @@ public void onMessage(WebSocket ws, ByteString data) {
                     WebSocket ws,
                     Throwable t,
                     Response response
-                ) {kiwiConnected = false;
+                ) {
+                    kiwiConnected = false;
                     runOnUiThread(() ->
-                        status.setText("SDR ERROR: " + t.getMessage()));
+                        status.setText("SDR ERROR: " + t.getMessage())
+                    );
+                }
+
+                @Override
+                public void onClosed(WebSocket ws, int code, String reason) {
+                    kiwiConnected = false;
                 }
             }
         );
@@ -580,10 +587,6 @@ public void onMessage(WebSocket ws, ByteString data) {
     } catch (Exception e) {
         status.setText("SDR ERROR: " + e.getMessage());
     }
-       @Override
-public void onClosed(WebSocket ws, int code, String reason) {
-    kiwiConnected = false;
-}
 }
     private void showServerList() {
 
