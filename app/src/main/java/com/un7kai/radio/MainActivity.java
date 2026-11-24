@@ -588,7 +588,7 @@ private void startAudio() {
         status.setText("SDR ERROR: " + e.getMessage());
     }
 }
-    private void showServerList() {
+   private void showServerList() {
 
     new Thread(() -> {
         HttpURLConnection connection = null;
@@ -605,9 +605,7 @@ private void startAudio() {
             connection.setReadTimeout(20000);
 
             BufferedReader reader = new BufferedReader(
-                new InputStreamReader(
-                    connection.getInputStream()
-                )
+                new InputStreamReader(connection.getInputStream())
             );
 
             StringBuilder json = new StringBuilder();
@@ -619,35 +617,42 @@ private void startAudio() {
 
             reader.close();
 
-            JSONObject data =
-                new JSONObject(json.toString());
+            JSONObject data = new JSONObject(json.toString());
 
             if (data.optInt("schema", -1) != 1) {
                 throw new Exception("Неизвестная версия каталога");
             }
 
             JSONArray all = data.getJSONArray("receivers");
+
             java.util.ArrayList<JSONObject> allowed =
                 new java.util.ArrayList<>();
 
-          for (int i = 0; i < all.length(); i++) {
-    JSONObject s = all.getJSONObject(i);
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject s = all.getJSONObject(i);
 
-    if (!s.has("ext_api") ||
-        s.optInt("ext_api", 0) <= 0 ||
-        s.optBoolean("offline", true) ||
-        s.optBoolean("flagged", true) ||
-        s.optString("url", "").isEmpty()) {
-        continue;
-    }
+                if (!s.has("ext_api") ||
+                    s.optInt("ext_api", 0) <= 0 ||
+                    s.optBoolean("offline", true) ||
+                    s.optBoolean("flagged", true) ||
+                    s.optString("url", "").isEmpty()) {
+                    continue;
+                }
 
-    allowed.add(s);
-}
+                allowed.add(s);
+            }
 
+            java.util.Collections.sort(
+                allowed,
+                (a, b) -> Integer.compare(
+                    countryPriority(a),
+                    countryPriority(b)
+                )
+            );
 
             runOnUiThread(() -> {
                 if (allowed.isEmpty()) {
-                    showMessage("Разрешённых серверов пока нет");
+                    showMessage("Доступных серверов пока нет");
                     return;
                 }
 
@@ -666,22 +671,28 @@ private void startAudio() {
                 }
 
                 new android.app.AlertDialog.Builder(this)
-                    .setTitle("KIWISDR — " + allowed.size() +
-                              " разрешённых серверов")
+                    .setTitle("KIWISDR — " + allowed.size() + " серверов")
                     .setItems(names, (dialog, which) -> {
-    JSONObject selected = allowed.get(which);
 
-   selectedServerUrl = selected.optString("url", "");
-stopAudio();
+                        JSONObject selected = allowed.get(which);
 
-connectKiwi(selectedServerUrl);
+                        selectedServerUrl =
+                            selected.optString("url", "");
+
+                        stopAudio();
+
+                        connectKiwi(selectedServerUrl);
                         connectWaterfall(selectedServerUrl);
-    status.setText(
-        "SDR: " + selected.optString("name", "KiwiSDR")
-    );
 
-    showMessage("Выбран сервер:\n" + selectedServerUrl);
-})
+                        status.setText(
+                            "SDR: " +
+                            selected.optString("name", "KiwiSDR")
+                        );
+
+                        showMessage(
+                            "Выбран сервер:\n" + selectedServerUrl
+                        );
+                    })
                     .setNegativeButton("Закрыть", null)
                     .show();
             });
@@ -698,6 +709,45 @@ connectKiwi(selectedServerUrl);
         }
 
     }).start();
+}
+    private int countryPriority(JSONObject s) {
+
+    String place = (
+        s.optString("loc", "") + " " +
+        s.optString("name", "") + " " +
+        s.optString("url", "")
+    ).toLowerCase(java.util.Locale.ROOT);
+
+    if (place.contains("казахстан") ||
+        place.contains("kazakhstan")) return 0;
+
+    if (place.contains("россия") ||
+        place.contains("russia") ||
+        place.contains("russian federation")) return 1;
+
+    if (place.contains("украина") ||
+        place.contains("ukraine")) return 2;
+
+    if (place.contains("грузия") ||
+        place.contains("georgia")) return 3;
+
+    if (place.contains("армения") ||
+        place.contains("armenia")) return 4;
+
+    if (place.contains("узбекистан") ||
+        place.contains("uzbekistan")) return 5;
+
+    if (place.contains("кыргызстан") ||
+        place.contains("киргизия") ||
+        place.contains("kyrgyzstan")) return 6;
+
+    if (place.contains("таджикистан") ||
+        place.contains("tajikistan")) return 7;
+
+    if (place.contains("туркменистан") ||
+        place.contains("turkmenistan")) return 8;
+
+    return 100;
 }
 private void connectWaterfall(String serverUrl) {
     try {
