@@ -193,6 +193,27 @@ public class MainActivity extends Activity {
         frequencyHz = Math.max(1000L, hz);
         refreshReadout();
         if (radioOn && webSdrEngine != null) webSdrEngine.tune(frequencyHz, selectedMode);
+        if (webSdrEngine != null) {
+            View dial = findDialView();
+            if (dial != null) dial.invalidate();
+        }
+    }
+
+    private View findDialView() {
+        ViewGroup root = (ViewGroup) findViewById(android.R.id.content);
+        return findDialRecursive(root);
+    }
+
+    private View findDialRecursive(ViewGroup parent) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child instanceof DialView) return child;
+            if (child instanceof ViewGroup) {
+                View found = findDialRecursive((ViewGroup) child);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     private void changeFrequency(long delta) {
@@ -204,6 +225,7 @@ public class MainActivity extends Activity {
         else if (stepHz == 100) stepHz = 1000;
         else if (stepHz == 1000) stepHz = 10000;
         else stepHz = 10;
+        refreshReadout();
         Toast.makeText(this, "Шаг: " + stepHz + " Гц", Toast.LENGTH_SHORT).show();
     }
 
@@ -235,6 +257,11 @@ public class MainActivity extends Activity {
         }
     }
 
+    /*
+     * Открывает официальный каталог классических WebSDR.
+     * Страницу каталога не перестраиваем: это сохраняет её штатную навигацию
+     * и позволяет выбрать любой доступный сервер.
+     */
     private void showServerList() {
         final WebView directory = new WebView(this);
         WebSettings settings = directory.getSettings();
@@ -257,17 +284,20 @@ public class MainActivity extends Activity {
                 Uri uri = Uri.parse(url);
                 String host = uri.getHost();
                 if (host == null) return false;
+
                 if (host.equalsIgnoreCase("websdr.org") ||
                         host.equalsIgnoreCase("www.websdr.org") ||
                         host.toLowerCase(Locale.US).endsWith(".websdr.org")) {
                     return false;
                 }
+
                 if ("http".equalsIgnoreCase(uri.getScheme()) ||
                         "https".equalsIgnoreCase(uri.getScheme())) {
                     selectedServerUrl = url;
                     dialog.dismiss();
-                    if (radioOn) connectSelectedServer();
-                    else {
+                    if (radioOn) {
+                        connectSelectedServer();
+                    } else {
                         if (serverText != null) serverText.setText(selectedServerUrl);
                         updateStatus("СЕРВЕР ВЫБРАН");
                     }
@@ -286,6 +316,7 @@ public class MainActivity extends Activity {
                 return handle(request.getUrl().toString());
             }
         };
+
         directory.setWebViewClient(client);
         dialog.setOnDismissListener(d -> {
             directory.stopLoading();
