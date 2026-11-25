@@ -67,28 +67,28 @@ public class WebSdrEngine extends WebView {
     }
 
     private void applyTune() {
-        if (!pageReady) return;
+    if (!pageReady) return;
 
-        double frequencyKHz = pendingFrequency / 1000.0;
+    double frequencyKHz = pendingFrequency / 1000.0;
 
-        String mode = pendingMode.toLowerCase(Locale.US);
+    String mode = pendingMode.toLowerCase(
+        Locale.US
+    );
 
-        String js = String.format(
-            Locale.US,
-            "(function() {" +
-            "if (typeof window.setfreq !== 'function' ||" +
-            "typeof window.set_mode !== 'function') {" +
-            "return 'API_NOT_FOUND';" +
-            "}" +
-            "window.set_mode('%s');" +
-            "window.setfreq(%.3f);" +
-            "return 'OK';" +
-            "})()",
-            mode,
-            frequencyKHz
-        );
+    String js = String.format(
+        Locale.US,
+        "(function() {" +
+        "if (typeof window.setfreqif !== 'function' ||" +
+        "typeof window.set_mode !== 'function') return 'API_NOT_FOUND';" +
+        "window.set_mode('%s');" +
+        "window.setfreqif('%.3f');" +
+        "return 'OK';" +
+        "})()",
+        mode,
+        frequencyKHz
+    );
 
-        evaluateJavascript(js, new ValueCallback<String>() {
+    evaluate
             @Override
             public void onReceiveValue(String value) {
                 // Результат выполнения JavaScript
