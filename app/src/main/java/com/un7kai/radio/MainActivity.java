@@ -152,7 +152,11 @@ private int audioFrameCount = 0;
         center.addView(bandLabel);
 
        webSdrEngine = new WebSdrEngine(this);
+        
 
+webSdrEngine.connect(
+    "http://tulasdr.fvds.ru:8901/"
+);
 LinearLayout.LayoutParams sp =
     new LinearLayout.LayoutParams(-1, 0, 1);
 
