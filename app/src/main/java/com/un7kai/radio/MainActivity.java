@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
 private WebSocket kiwiSocket;
     private WebSocket waterfallSocket;
     private WebSdrEngine webSdrEngine;
+    private WaterfallView waterfallView;
 private boolean kiwiConnected = false;
     private android.media.AudioTrack audioTrack;
     private String selectedServerUrl = "";
