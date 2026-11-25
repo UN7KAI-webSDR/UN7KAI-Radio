@@ -52,6 +52,8 @@ private boolean kiwiConnected = false;
     private int audioSampleRate = 12000;
     private boolean audioFlagShown = false;
 private boolean audioStarted = false;
+    private long lastAudioTime = 0;
+private int audioFrameCount = 0;
     private boolean radioOn = true;
     private TextView frequency;
     private TextView bandLabel;
@@ -520,6 +522,8 @@ private void startAudio() {
                 @Override
                 public void onMessage(WebSocket ws, ByteString data) {
                     byte[] frame = data.toByteArray();
+                    lastAudioTime = System.currentTimeMillis();
+audioFrameCount++;
 
                     if (frame.length <= 10 ||
                         frame[0] != 'S' ||
@@ -555,7 +559,13 @@ private void startAudio() {
                         }
                     }
 
-                    audioTrack.write(pcm, 0, length);
+                   int written = audioTrack.write(pcm, 0, length);
+
+if (written < 0) {
+    runOnUiThread(() ->
+        status.setText("AUDIO WRITE ERROR: " + written)
+    );
+}
                 }
 
                 @Override
