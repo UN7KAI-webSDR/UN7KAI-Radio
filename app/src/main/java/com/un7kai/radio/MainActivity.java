@@ -810,11 +810,8 @@ private void connectWaterfall(String serverUrl) {
             request,
             new WebSocketListener() {
 
-                @Override
-                public void onOpen(WebSocket ws, Response response) {
-                    runOnUiThread(() ->
-    status.setText("WATERFALL CONNECTED")
-);
+              @Override
+public void onOpen(WebSocket ws, Response response) { 
                     ws.send("SET auth t=kiwi p=#");
                     ws.send("SET wf_comp=0");
                     ws.send("SET zoom=0 start=0");
@@ -842,16 +839,14 @@ private void connectWaterfall(String serverUrl) {
                     });
                 }
 
-              @Override
+            @Override
 public void onFailure(
     WebSocket ws,
     Throwable t,
     Response response
 ) {
-    runOnUiThread(() ->
-        status.setText("WF ERROR: " + t.getMessage())
-    );
-}
+    // Ошибка водопада не должна менять состояние радио
+} 
             }
         );
 
