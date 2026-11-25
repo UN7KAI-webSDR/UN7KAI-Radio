@@ -6,7 +6,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
-import android.webkit.ValueCallback;
 
 import java.util.Locale;
 
@@ -28,7 +27,7 @@ public class WebSdrEngine extends WebView {
 
         if (Build.VERSION.SDK_INT >= 21) {
             settings.setMixedContentMode(
-                WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                    WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             );
         }
 
@@ -50,16 +49,14 @@ public class WebSdrEngine extends WebView {
         pageReady = false;
 
         if (url != null &&
-            (url.startsWith("http://") ||
-             url.startsWith("https://"))) {
+                (url.startsWith("http://") || url.startsWith("https://"))) {
             loadUrl(url);
         }
     }
 
     public void tune(long frequencyHz, String mode) {
         pendingFrequency = frequencyHz;
-        pendingMode = mode == null ? "LSB" :
-            mode.toUpperCase(Locale.US);
+        pendingMode = mode == null ? "LSB" : mode.toUpperCase(Locale.US);
 
         if (pageReady) {
             applyTune();
@@ -67,33 +64,25 @@ public class WebSdrEngine extends WebView {
     }
 
     private void applyTune() {
-    if (!pageReady) return;
+        if (!pageReady) return;
 
-    double frequencyKHz = pendingFrequency / 1000.0;
+        double frequencyKHz = pendingFrequency / 1000.0;
+        String mode = pendingMode.toLowerCase(Locale.US);
 
-    String mode = pendingMode.toLowerCase(
-        Locale.US
-    );
+        String js = String.format(
+                Locale.US,
+                "(function() {" +
+                        "if (typeof window.setfreqif !== 'function' ||" +
+                        "typeof window.set_mode !== 'function') return 'API_NOT_FOUND';" +
+                        "window.set_mode('%s');" +
+                        "window.setfreqif('%.3f');" +
+                        "return 'OK';" +
+                        "})()",
+                mode,
+                frequencyKHz
+        );
 
-    String js = String.format(
-        Locale.US,
-        "(function() {" +
-        "if (typeof window.setfreqif !== 'function' ||" +
-        "typeof window.set_mode !== 'function') return 'API_NOT_FOUND';" +
-        "window.set_mode('%s');" +
-        "window.setfreqif('%.3f');" +
-        "return 'OK';" +
-        "})()",
-        mode,
-        frequencyKHz
-    );
-
-    evaluate
-            @Override
-            public void onReceiveValue(String value) {
-                // Результат выполнения JavaScript
-            }
-        });
+        evaluateJavascript(js, null);
     }
 
     public void disconnect() {
