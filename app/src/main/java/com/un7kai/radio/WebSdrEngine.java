@@ -1,22 +1,20 @@
 package com.un7kai.radio;
 
 import android.content.Context;
+import android.os.Build;
 import android.webkit.WebView;
-import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
-import android.os.Build;
+import android.webkit.WebSettings;
+import android.webkit.ValueCallback;
 
 import java.util.Locale;
 
 public class WebSdrEngine extends WebView {
 
     private boolean pageReady = false;
-    private long pendingDelta = 0;
-    private String pendingMode = "lsb";
-
-    private final String baseUrl =
-        "http://tulasdr.fvds.ru:8901/";
+    private long pendingFrequency = 7129100L;
+    private String pendingMode = "LSB";
 
     public WebSdrEngine(Context context) {
         super(context);
@@ -24,6 +22,7 @@ public class WebSdrEngine extends WebView {
         WebSettings settings = getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setLoadsImagesAutomatically(true);
 
@@ -37,21 +36,10 @@ public class WebSdrEngine extends WebView {
 
         setWebViewClient(new WebViewClient() {
             @Override
-            public void onPageFinished(
-                WebView view, String url
-            ) {
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
                 pageReady = true;
-
-                evaluateJavascript(
-                    "set_mode('" + pendingMode + "');",
-                    null
-                );
-
-                if (pendingDelta != 0) {
-                    long d = pendingDelta;
-                    pendingDelta = 0;
-                    changeFrequency(d);
-                }
+                applyTune();
             }
         });
 
@@ -60,53 +48,52 @@ public class WebSdrEngine extends WebView {
 
     public void connect(String url) {
         pageReady = false;
-        loadUrl(url);
-    }
 
-    public void connectDefault(long frequencyHz, String mode) {
-        String tune = String.format(
-            Locale.US,
-            "%.1f%s",
-            frequencyHz / 1000.0,
-            mode.toLowerCase(Locale.US)
-        );
-
-        connect(baseUrl + "?tune=" + tune);
-    }
-
-    public void changeFrequency(long deltaHz) {
-        if (!pageReady) {
-            pendingDelta += deltaHz;
-            return;
+        if (url != null &&
+            (url.startsWith("http://") ||
+             url.startsWith("https://"))) {
+            loadUrl(url);
         }
-
-        int steps = (int)Math.round(deltaHz / 100.0);
-
-        if (steps == 0) return;
-
-        String direction = steps > 0 ? "+1" : "-1";
-        int count = Math.abs(steps);
-
-        String js =
-            "for(var i=0;i<" + count + ";i++){freqstep(" +
-            direction + ");} nominalfreq();";
-
-        evaluateJavascript(js, null);
     }
 
-    public void setMode(String mode) {
-        pendingMode = mode.toLowerCase(Locale.US);
+    public void tune(long frequencyHz, String mode) {
+        pendingFrequency = frequencyHz;
+        pendingMode = mode == null ? "LSB" :
+            mode.toUpperCase(Locale.US);
 
         if (pageReady) {
-            evaluateJavascript(
-                "set_mode('" + pendingMode + "'); nominalfreq();",
-                null
-            );
+            applyTune();
         }
     }
 
-    public void setFrequency(long frequencyHz, String mode) {
-        connectDefault(frequencyHz, mode);
+    private void applyTune() {
+        if (!pageReady) return;
+
+        double frequencyKHz = pendingFrequency / 1000.0;
+
+        String mode = pendingMode.toLowerCase(Locale.US);
+
+        String js = String.format(
+            Locale.US,
+            "(function() {" +
+            "if (typeof window.setfreq !== 'function' ||" +
+            "typeof window.set_mode !== 'function') {" +
+            "return 'API_NOT_FOUND';" +
+            "}" +
+            "window.set_mode('%s');" +
+            "window.setfreq(%.3f);" +
+            "return 'OK';" +
+            "})()",
+            mode,
+            frequencyKHz
+        );
+
+        evaluateJavascript(js, new ValueCallback<String>() {
+            @Override
+            public void onReceiveValue(String value) {
+                // Результат выполнения JavaScript
+            }
+        });
     }
 
     public void disconnect() {
