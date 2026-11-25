@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
     private OkHttpClient kiwiClient;
 private WebSocket kiwiSocket;
     private WebSocket waterfallSocket;
-    private WaterfallView waterfallView;
+    private WebSdrEngine webSdrEngine;
 private boolean kiwiConnected = false;
     private android.media.AudioTrack audioTrack;
     private String selectedServerUrl = "";
@@ -151,15 +151,13 @@ private int audioFrameCount = 0;
         bandLabel = text("40 м • LSB", 14, true, CYAN);
         center.addView(bandLabel);
 
-       waterfallView = new WaterfallView(this);
-waterfallView.setBackgroundColor(Color.BLACK);
+       webSdrEngine = new WebSdrEngine(this);
 
 LinearLayout.LayoutParams sp =
-    new LinearLayout.LayoutParams(
-        -1, 0, 1);
+    new LinearLayout.LayoutParams(-1, 0, 1);
 
 sp.setMargins(dp(4), dp(8), dp(4), dp(8));
-center.addView(waterfallView, sp);
+center.addView(webSdrEngine, sp);
 
         DialView knob = new DialView(this);
         center.addView(knob,
