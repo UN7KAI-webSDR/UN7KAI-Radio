@@ -522,13 +522,19 @@ private void startAudio() {
                 @Override
                 public void onMessage(WebSocket ws, ByteString data) {
                     byte[] frame = data.toByteArray();
-                    lastAudioTime = System.currentTimeMillis();
-audioFrameCount++;
-
+                    
                     if (frame.length <= 10 ||
                         frame[0] != 'S' ||
                         frame[1] != 'N' ||
                         frame[2] != 'D') return;
+                     lastAudioTime = System.currentTimeMillis();
+audioFrameCount++;
+                    if (audioFrameCount % 500 == 0) {
+    runOnUiThread(() ->
+        status.setText("SND FRAMES: " + audioFrameCount)
+    );
+}
+
 
                     int flags = frame[3] & 0xff;
 
